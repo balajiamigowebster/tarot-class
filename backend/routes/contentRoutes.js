@@ -19,7 +19,7 @@ const videoStorage = multer.diskStorage({
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
-});
+}); 
 const uploadVideo = multer({ 
   storage: videoStorage,
   limits: { fileSize: 5000 * 1024 * 1024 } // 5GB limit

@@ -4,8 +4,6 @@ import Navigation from '../../components/Navigation';
 import PdfModal from '../../components/PdfModal';
 import { Play, PlayCircle, FileText, Download, Eye, Clock, BookOpen, LayoutDashboard, Video, FileEdit, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import VideoManagement from '../../components/dashboard/VideoManagement';
-import PdfManagement from '../../components/dashboard/PdfManagement';
 import SyllabusManagement from '../../components/dashboard/SyllabusManagement';
 
 const Dashboard = () => {
@@ -209,28 +207,6 @@ const Dashboard = () => {
               <span className="font-medium">My Course</span>
             </button>
             <button
-              onClick={() => setActiveTab('manage_videos')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                activeTab === 'manage_videos' 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Video className="w-5 h-5" />
-              <span className="font-medium">Manage Videos</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('manage_pdfs')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                activeTab === 'manage_pdfs' 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <FileEdit className="w-5 h-5" />
-              <span className="font-medium">Manage PDFs</span>
-            </button>
-            <button
               onClick={() => setActiveTab('manage_syllabus')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                 activeTab === 'manage_syllabus' 
@@ -257,8 +233,6 @@ const Dashboard = () => {
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-4rem)] relative z-10">
           <div className="max-w-7xl mx-auto">
             {activeTab === 'course' && renderCourseContent()}
-            {activeTab === 'manage_videos' && <VideoManagement />}
-            {activeTab === 'manage_pdfs' && <PdfManagement />}
             {activeTab === 'manage_syllabus' && <SyllabusManagement />}
           </div>
         </main>

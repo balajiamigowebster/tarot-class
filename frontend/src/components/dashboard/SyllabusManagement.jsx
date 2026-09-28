@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Trash2, Edit2, Play, Image as ImageIcon, Video } from 'lucide-react';
+import { Upload, Trash2, Edit2, Play, Image as ImageIcon, Video, FileText } from 'lucide-react';
 import { config } from '../../config';
 
 const SyllabusManagement = () => {
@@ -23,6 +23,12 @@ const SyllabusManagement = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
 
+  const [pdfs, setPdfs] = useState([]);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfTitle, setPdfTitle] = useState('');
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
   useEffect(() => {
     fetch(`${config.API_BASE_URL}/api/syllabus/categories`)
       .then(res => res.json())
@@ -37,6 +43,7 @@ const SyllabusManagement = () => {
     if (selectedCategory) {
       fetchVideos();
       fetchImages();
+      fetchPdfs();
     }
   }, [selectedCategory]);
 
@@ -51,6 +58,13 @@ const SyllabusManagement = () => {
     fetch(`${config.API_BASE_URL}/api/syllabus/categories/${selectedCategory.id}/images`)
       .then(res => res.json())
       .then(data => setImages(data))
+      .catch(err => console.error(err));
+  };
+
+  const fetchPdfs = () => {
+    fetch(`${config.API_BASE_URL}/api/syllabus/categories/${selectedCategory.id}/pdfs`)
+      .then(res => res.json())
+      .then(data => setPdfs(data))
       .catch(err => console.error(err));
   };
 
@@ -171,6 +185,47 @@ const SyllabusManagement = () => {
     }
   };
 
+  const handlePdfUpload = async (e) => {
+    e.preventDefault();
+    if (!pdfFile) return alert("PDF file is required");
+    
+    setPdfLoading(true);
+    const formData = new FormData();
+    formData.append('title', pdfTitle);
+    formData.append('category_id', selectedCategory.id);
+    formData.append('categorySlug', selectedCategory.slug);
+    formData.append('pdf', pdfFile);
+
+    try {
+      const { default: axios } = await import('axios');
+      const res = await axios.post(`${config.API_BASE_URL}/api/syllabus/pdfs`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.status === 201) {
+        setPdfTitle('');
+        setPdfFile(null);
+        setShowPdfModal(false);
+        fetchPdfs();
+      } else {
+        alert("Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setPdfLoading(false);
+  };
+
+  const handlePdfDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this PDF?")) {
+      try {
+        const res = await fetch(`${config.API_BASE_URL}/api/syllabus/pdfs/${id}`, { method: 'DELETE' });
+        if (res.ok) fetchPdfs();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-6 min-h-[70vh]">
       {/* Categories Sidebar */}
@@ -201,12 +256,18 @@ const SyllabusManagement = () => {
                 <h3 className="text-2xl font-bold text-white mb-1"><span className="text-amber-500">{selectedCategory.name}</span></h3>
                 <p className="text-slate-400 text-sm">{selectedCategory.description}</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                <button 
+                  onClick={() => setShowPdfModal(true)}
+                  className="bg-green-600 hover:bg-green-500 text-white font-bold text-sm whitespace-nowrap py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
+                >
+                  <FileText className="w-4 h-4" /> Add PDF
+                </button>
                 <button 
                   onClick={() => setShowImageModal(true)}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm whitespace-nowrap py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
                 >
-                  <ImageIcon className="w-5 h-5" /> Add Images
+                  <ImageIcon className="w-4 h-4" /> Add Images
                 </button>
                 <button 
                   onClick={() => {
@@ -218,9 +279,9 @@ const SyllabusManagement = () => {
                     setEditVideoId(null);
                     setShowUploadModal(true);
                   }}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm whitespace-nowrap py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
                 >
-                  <Upload className="w-5 h-5" /> Add New Video
+                  <Upload className="w-4 h-4" /> Add New Video
                 </button>
               </div>
             </div>
@@ -297,6 +358,37 @@ const SyllabusManagement = () => {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* PDFs Grid */}
+            <div className="bg-slate-900 border border-indigo-900/50 rounded-2xl p-8 flex-1 shadow-xl">
+              <h3 className="text-2xl font-bold text-white mb-8 border-b border-indigo-900/50 pb-4">Uploaded PDFs ({pdfs.length})</h3>
+              
+              {pdfs.length === 0 ? (
+                <div className="text-slate-500 text-center py-16 bg-slate-950/50 rounded-xl border border-dashed border-indigo-900/30">
+                  <FileText className="w-12 h-12 mx-auto text-slate-700 mb-4" />
+                  No PDFs uploaded for this category yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {pdfs.map(pdf => (
+                    <div key={pdf.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl p-6 hover:border-green-500/50 transition-colors shadow-lg flex flex-col group">
+                      <div className="w-12 h-12 bg-indigo-950 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                        <FileText className="w-6 h-6 text-green-500" />
+                      </div>
+                      <h4 className="text-lg font-bold text-white mb-2 leading-tight">{pdf.title || 'Untitled PDF'}</h4>
+                      <p className="text-sm text-slate-400 flex-1 mb-4 truncate">{pdf.pdf_url.split('/').pop()}</p>
+                      
+                      <div className="mt-auto flex items-center justify-between border-t border-indigo-900/50 pt-4">
+                         <a href={`${config.API_BASE_URL}${pdf.pdf_url}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-400 hover:text-indigo-300 font-bold">View PDF</a>
+                         <button onClick={() => handlePdfDelete(pdf.id)} className="p-2 bg-slate-800 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
+                           <Trash2 className="w-4 h-4" />
+                         </button>
                       </div>
                     </div>
                   ))}
@@ -410,6 +502,54 @@ const SyllabusManagement = () => {
                       </button>
                       <button type="submit" disabled={imageLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-8 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:hover:scale-100 hover:-translate-y-1">
                         {imageLoading ? 'Uploading...' : <><Upload className="w-5 h-5" /> Upload Image</>}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* PDF Upload Modal */}
+            {showPdfModal && (
+              <div 
+                className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                onClick={() => setShowPdfModal(false)}
+              >
+                <div 
+                  className="bg-slate-900 border border-indigo-900/50 rounded-2xl p-6 shadow-2xl w-full max-w-xl relative mt-10 sm:mt-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button 
+                    onClick={() => setShowPdfModal(false)}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-[#E41E5D] bg-slate-800 hover:bg-slate-700 p-2 rounded-full transition-colors z-10"
+                    aria-label="Close modal"
+                  >
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                  
+                  <h3 className="text-xl font-bold text-white mb-6 pr-10">Add PDF to: <span className="text-green-400">{selectedCategory.name}</span></h3>
+                  
+                  <form onSubmit={handlePdfUpload} className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-slate-300 text-sm font-bold mb-1.5">PDF Title (Optional)</label>
+                      <input type="text" value={pdfTitle} onChange={e => setPdfTitle(e.target.value)} className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none transition-colors" placeholder="e.g. Reference Guide" />
+                    </div>
+                    
+                    <div className="border-2 border-dashed border-indigo-900/50 hover:border-green-500/50 transition-colors rounded-xl p-6 bg-slate-950/50 flex flex-col items-center justify-center text-center group mt-2">
+                      <FileText className="w-10 h-10 text-green-400 mb-3 group-hover:scale-110 transition-transform" />
+                      <label className="cursor-pointer text-green-400 hover:text-green-300 font-bold text-sm px-4 py-2 bg-green-500/10 rounded-lg">
+                        Select PDF File *
+                        <input type="file" accept="application/pdf" className="hidden" onChange={e => setPdfFile(e.target.files[0])} required />
+                      </label>
+                      {pdfFile && <span className="text-xs text-slate-400 mt-3 truncate max-w-full px-2 font-mono bg-slate-900 p-1.5 rounded">{pdfFile.name}</span>}
+                    </div>
+                    
+                    <div className="flex justify-end mt-4 gap-3 border-t border-indigo-900/50 pt-4">
+                      <button type="button" onClick={() => setShowPdfModal(false)} className="text-slate-400 hover:text-[#E41E5D] font-bold py-2.5 px-6 transition-colors">
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={pdfLoading} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-8 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-green-500/25 disabled:opacity-50 disabled:hover:scale-100 hover:-translate-y-1">
+                        {pdfLoading ? 'Uploading...' : <><Upload className="w-5 h-5" /> Upload PDF</>}
                       </button>
                     </div>
                   </form>

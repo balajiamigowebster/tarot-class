@@ -164,3 +164,58 @@ exports.deleteImage = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+const SyllabusPdf = require('../models/SyllabusPdf');
+
+exports.getPdfsByCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const pdfs = await SyllabusPdf.findAll({
+      where: { category_id: categoryId },
+      order: [['order', 'ASC'], ['createdAt', 'DESC']]
+    });
+    res.json(pdfs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.addPdf = async (req, res) => {
+  try {
+    const { title, category_id, order, file_size } = req.body;
+    const categorySlug = req.body.categorySlug || 'uncategorized';
+    
+    let pdfUrl = '';
+    if (req.file) {
+       pdfUrl = `/api/uploads/syllabus/${categorySlug}/${req.file.filename}`;
+    } else {
+       return res.status(400).json({ message: 'PDF file is required' });
+    }
+
+    const newPdf = await SyllabusPdf.create({
+      category_id,
+      title,
+      pdf_url: pdfUrl,
+      file_size,
+      order: order || 0
+    });
+
+    res.status(201).json(newPdf);
+  } catch (error) {
+    console.error("Add PDF error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deletePdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pdf = await SyllabusPdf.findByPk(id);
+    if (!pdf) return res.status(404).json({ message: 'PDF not found' });
+
+    await pdf.destroy();
+    res.json({ message: 'PDF deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

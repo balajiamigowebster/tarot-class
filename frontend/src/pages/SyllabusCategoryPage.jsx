@@ -7,6 +7,7 @@ const SyllabusCategoryPage = () => {
   const [category, setCategory] = useState(null);
   const [videos, setVideos] = useState([]);
   const [images, setImages] = useState([]);
+  const [pdfs, setPdfs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
@@ -28,10 +29,11 @@ const SyllabusCategoryPage = () => {
         
         setCategory(currentCategory);
         
-        // Fetch videos and images for this category
-        const [vidRes, imgRes] = await Promise.all([
+        // Fetch videos, images, and pdfs for this category
+        const [vidRes, imgRes, pdfRes] = await Promise.all([
           fetch(`${config.API_BASE_URL}/api/syllabus/categories/${currentCategory.id}/videos`),
-          fetch(`${config.API_BASE_URL}/api/syllabus/categories/${currentCategory.id}/images`)
+          fetch(`${config.API_BASE_URL}/api/syllabus/categories/${currentCategory.id}/images`),
+          fetch(`${config.API_BASE_URL}/api/syllabus/categories/${currentCategory.id}/pdfs`)
         ]);
         
         if (vidRes.ok) {
@@ -39,6 +41,9 @@ const SyllabusCategoryPage = () => {
         }
         if (imgRes.ok) {
           setImages(await imgRes.json());
+        }
+        if (pdfRes.ok) {
+          setPdfs(await pdfRes.json());
         }
       } catch (err) {
         console.error(err);
@@ -251,6 +256,55 @@ const SyllabusCategoryPage = () => {
           </div>
         </div>
       )}
+
+      {/* Study PDFs Section */}
+      <div className="mt-16 border-t border-slate-200 pt-16">
+        <h2 className="text-2xl font-bold text-[#0C3229] mb-8 font-serif border-b pb-4">Study PDFs & Reference Guides</h2>
+        
+        {pdfs.length === 0 ? (
+          <div className="bg-white p-8 rounded-xl border border-slate-200 text-center shadow-sm">
+            <svg className="w-12 h-12 mx-auto text-slate-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <p className="text-slate-500 font-medium">No PDF materials have been uploaded for this category yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pdfs.map(pdf => (
+              <div 
+                key={pdf.id} 
+                className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col group"
+              >
+                <div className="w-12 h-12 bg-[#f0ebd8] rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-[#B89355]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                
+                <h3 className="text-xl font-bold text-[#1D2939] mb-2 leading-tight">{pdf.title || 'Untitled Reference Guide'}</h3>
+                
+                <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
+                  <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                    {pdf.file_size || 'PDF'}
+                  </span>
+                  
+                  <div className="flex space-x-3">
+                    <a 
+                      href={`${config.API_BASE_URL}${pdf.pdf_url}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-bold text-[#0C3229] hover:text-[#B89355] transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      View
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

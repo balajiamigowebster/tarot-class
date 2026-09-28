@@ -12,6 +12,7 @@ const UserPurchase = require('./models/UserPurchase');
 const SyllabusCategory = require('./models/SyllabusCategory');
 const SyllabusVideo = require('./models/SyllabusVideo');
 const SyllabusImage = require('./models/SyllabusImage');
+const SyllabusPdf = require('./models/SyllabusPdf');
 
 // Associations
 Course.hasMany(CourseVideo, { foreignKey: 'course_id', as: 'videos' });
