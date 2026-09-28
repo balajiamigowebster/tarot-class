@@ -54,12 +54,15 @@ const SyllabusManagement = () => {
       .catch(err => console.error(err));
   };
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!editVideoId && !videoFile) return alert("Video file is required");
     if (!title) return alert("Title is required");
     
     setLoading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
@@ -73,13 +76,22 @@ const SyllabusManagement = () => {
       const url = editVideoId 
         ? `${config.API_BASE_URL}/api/syllabus/videos/${editVideoId}` 
         : `${config.API_BASE_URL}/api/syllabus/videos`;
-      const method = editVideoId ? 'PUT' : 'POST';
+      const method = editVideoId ? 'put' : 'post';
 
-      const res = await fetch(url, {
+      // Use axios instead of fetch to track upload progress
+      const { default: axios } = await import('axios');
+      const res = await axios({
         method,
-        body: formData
+        url,
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
       });
-      if (res.ok) {
+      
+      if (res.status === 200 || res.status === 201) {
         setTitle('');
         setDescription('');
         setDuration('');
@@ -87,12 +99,14 @@ const SyllabusManagement = () => {
         setThumbnailFile(null);
         setEditVideoId(null);
         setShowUploadModal(false);
+        setUploadProgress(0);
         fetchVideos();
       } else {
         alert("Upload failed");
       }
     } catch (err) {
       console.error(err);
+      alert("Error during upload.");
     }
     setLoading(false);
   };
@@ -348,7 +362,7 @@ const SyllabusManagement = () => {
                         Cancel
                       </button>
                       <button type="submit" disabled={loading} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-8 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-amber-500/25 disabled:opacity-50 disabled:hover:scale-100 hover:-translate-y-1">
-                        {loading ? (editVideoId ? 'Updating...' : 'Uploading...') : <><Upload className="w-5 h-5" /> {editVideoId ? 'Update Video' : 'Upload Video'}</>}
+                        {loading ? (editVideoId ? `Updating... ${uploadProgress}%` : `Uploading... ${uploadProgress}%`) : <><Upload className="w-5 h-5" /> {editVideoId ? 'Update Video' : 'Upload Video'}</>}
                       </button>
                     </div>
                   </form>
