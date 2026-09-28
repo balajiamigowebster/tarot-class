@@ -50,30 +50,47 @@ exports.addVideo = async (req, res) => {
   try {
     const { course_id, title, description, duration, lesson_number } = req.body;
 
-    let videoUrl = req.body.video_url;
-    if (req.file) {
-      // Add /api prefix because the cPanel Node app is mounted at /api
-      videoUrl = `${req.protocol}://${req.get('host')}/api/uploads/videos/${req.file.filename}`;
-    }
-
     let finalCourseId = course_id;
     if (!finalCourseId) {
       const course = await Course.findOne();
       if (course) finalCourseId = course.id;
     }
 
-    const newVideo = await CourseVideo.create({
-      course_id: finalCourseId || 1,
-      lesson_number: lesson_number || 1,
-      title,
-      description,
-      video_url: videoUrl,
-      duration
-    });
+    const createdVideos = [];
 
-    res.json({ success: true, data: newVideo });
+    // Handle multiple uploaded files
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const videoUrl = `${req.protocol}://${req.get('host')}/api/uploads/videos/${file.filename}`;
+        
+        const newVideo = await CourseVideo.create({
+          course_id: finalCourseId || 1,
+          // If arrays are passed for title/lesson_number, use them by index, otherwise fallback to string value or default
+          lesson_number: (Array.isArray(lesson_number) ? lesson_number[i] : lesson_number) || (i + 1),
+          title: (Array.isArray(title) ? title[i] : title) || `Video ${i + 1}`,
+          description: Array.isArray(description) ? description[i] : description,
+          video_url: videoUrl,
+          duration: Array.isArray(duration) ? duration[i] : duration
+        });
+        createdVideos.push(newVideo);
+      }
+    } else if (req.body.video_url) {
+      // Fallback for a single video URL submission
+      const newVideo = await CourseVideo.create({
+        course_id: finalCourseId || 1,
+        lesson_number: lesson_number || 1,
+        title,
+        description,
+        video_url: req.body.video_url,
+        duration
+      });
+      createdVideos.push(newVideo);
+    }
+
+    res.json({ success: true, data: createdVideos });
   } catch (error) {
-    console.error('Error adding video:', error);
+    console.error('Error adding video(s):', error);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
