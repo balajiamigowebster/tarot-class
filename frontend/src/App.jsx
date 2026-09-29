@@ -6,6 +6,7 @@ import VideoClasses from './pages/VideoClasses';
 import StudyMaterial from './pages/StudyMaterial';
 import Navbar from './components/Navbar';
 import SyllabusCategoryPage from './pages/SyllabusCategoryPage';
+import VideoPlayerPage from './pages/VideoPlayerPage';
 import LiveClassManager from './components/dashboard/LiveClassManager';
 import LiveClassRoom from './pages/LiveClassRoom';
 import Login from './pages/Login';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/admin/live-classes" element={<ProtectedRoute><LiveClassManager /></ProtectedRoute>} />
           <Route path="/live-class/:id" element={<ProtectedRoute><LiveClassRoom /></ProtectedRoute>} />
           <Route path="/syllabus/:slug" element={<ProtectedRoute><SyllabusCategoryPage /></ProtectedRoute>} />
+          <Route path="/syllabus/:slug/video/:videoId" element={<ProtectedRoute><VideoPlayerPage /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </div>

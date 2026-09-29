@@ -10,7 +10,6 @@ const SyllabusCategoryPage = () => {
   const [pdfs, setPdfs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [playingVideo, setPlayingVideo] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
@@ -99,9 +98,9 @@ const SyllabusCategoryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {videos.map((video) => (
               <div key={video.id} className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col">
-                <div 
-                  className="relative bg-black h-48 flex items-center justify-center cursor-pointer group overflow-hidden"
-                  onClick={() => setPlayingVideo(video)}
+                <Link 
+                  to={`/syllabus/${slug}/video/${video.id}`}
+                  className="relative bg-black h-48 flex items-center justify-center cursor-pointer group overflow-hidden block"
                 >
                   {video.thumbnail_url ? (
                     <img 
@@ -119,11 +118,11 @@ const SyllabusCategoryPage = () => {
                     />
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-black/70 rounded-full p-4 shadow-xl backdrop-blur-sm group-hover:bg-black group-hover:scale-110 transition-all border border-white/10">
+                    <div className="bg-black/70 rounded-full p-4 shadow-xl backdrop-blur-sm group-hover:bg-[#B89355] group-hover:scale-110 transition-all border border-white/10">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
                     </div>
                   </div>
-                </div>
+                </Link>
                 
                 <div className="p-5 flex flex-col flex-1">
                   <h4 className="font-bold text-[#1D2939] text-lg mb-2 leading-tight line-clamp-2">
@@ -138,12 +137,12 @@ const SyllabusCategoryPage = () => {
                     {video.duration || 'N/A'}
                   </p>
                   <div className="mt-auto">
-                    <button 
-                      onClick={() => setPlayingVideo(video)}
-                      className="w-full py-2.5 rounded-md bg-[#0C3229] hover:bg-[#08201a] text-white font-bold transition-colors shadow-sm"
+                    <Link 
+                      to={`/syllabus/${slug}/video/${video.id}`}
+                      className="w-full py-2.5 rounded-md bg-[#0C3229] hover:bg-[#08201a] text-white font-bold transition-colors shadow-sm block text-center"
                     >
                       Play Now
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -151,35 +150,6 @@ const SyllabusCategoryPage = () => {
           </div>
         )}
       </div>
-
-      {/* Video Player Modal */}
-      {playingVideo && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" onClick={() => setPlayingVideo(null)}>
-          <div className="w-full max-w-5xl bg-black rounded-2xl overflow-hidden relative shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10 flex justify-between items-start pointer-events-none">
-              <h3 className="text-white font-bold text-xl drop-shadow-md pr-10">{playingVideo.title}</h3>
-            </div>
-            <button 
-              onClick={() => setPlayingVideo(null)}
-              className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/50 hover:bg-[#E41E5D] p-2 rounded-full transition-all z-20"
-              aria-label="Close video"
-            >
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <div className="aspect-video w-full bg-black flex items-center justify-center">
-              <video 
-                src={`${config.API_BASE_URL}${playingVideo.video_url}`} 
-                controls 
-                autoPlay 
-                className="w-full h-full"
-                controlsList="nodownload"
-              >
-                Your browser does not support the video tag.
-              </video>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div>
         <h2 className="text-2xl font-bold text-[#0C3229] mb-8 font-serif border-b pb-4">Study Images</h2>
