@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
-import { config } from '../../../config';
+import { config } from '../../config';
 
 const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
