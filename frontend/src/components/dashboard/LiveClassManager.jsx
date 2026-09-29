@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { config } from '../../../config';
 
 const LiveClassManager = () => {
   const [classes, setClasses] = useState([]);
@@ -11,7 +12,7 @@ const LiveClassManager = () => {
 
   const fetchClasses = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/live-classes');
+      const res = await axios.get(`${config.API_BASE_URL}/api/live-classes`);
       setClasses(res.data);
     } catch (err) {
       console.error(err);
@@ -33,7 +34,7 @@ const LiveClassManager = () => {
     setError(null);
     try {
       const generatedMeetingUrl = `tarot-class-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      await axios.post('http://localhost:5000/api/live-classes', {
+      await axios.post(`${config.API_BASE_URL}/api/live-classes`, {
         title: formData.title,
         meetingUrl: generatedMeetingUrl,
         allowedEmails: []

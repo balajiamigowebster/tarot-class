@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { config } from '../../config';
 
 const LiveClassRoom = () => {
   const { id } = useParams();
@@ -16,7 +17,7 @@ const LiveClassRoom = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.post(`http://localhost:5000/api/live-classes/verify-access/${id}`, { email, isHost });
+      const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/verify-access/${id}`, { email, isHost });
       if (res.data.authorized) {
         setClassData(res.data.classData);
         setAuthStep(false);

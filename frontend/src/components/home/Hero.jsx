@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
+import { config } from '../../../config';
 
 const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
@@ -13,7 +14,7 @@ const Hero = () => {
       const decoded = jwtDecode(credentialResponse.credential);
       const { email, name } = decoded;
       
-      const res = await axios.post('http://localhost:5000/api/live-classes/register', { email, name });
+      const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/register`, { email, name });
       if (res.status === 200) {
         setRegisterStatus('Success! You are registered for the Live Class.');
       }
