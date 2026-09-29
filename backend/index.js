@@ -14,6 +14,7 @@ const SyllabusVideo = require('./models/SyllabusVideo');
 const SyllabusImage = require('./models/SyllabusImage');
 const SyllabusPdf = require('./models/SyllabusPdf');
 const LiveClass = require('./models/LiveClass');
+const LiveClassRegistration = require('./models/LiveClassRegistration');
 
 // Associations
 Course.hasMany(CourseVideo, { foreignKey: 'course_id', as: 'videos' });
@@ -30,6 +31,7 @@ const contentRoutes = require('./routes/contentRoutes');
 const accessRoutes = require('./routes/accessRoutes');
 const syllabusRoutes = require('./routes/syllabusRoutes');
 const liveClassRoutes = require('./routes/liveClassRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -74,6 +76,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/check-access', accessRoutes);
 app.use('/api/syllabus', syllabusRoutes);
 app.use('/api/live-classes', liveClassRoutes);
+app.use('/api/auth', authRoutes);
 
 // (Old placeholder upload endpoint removed)
 

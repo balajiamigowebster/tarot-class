@@ -1,8 +1,27 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
 
 const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
+  const [registerStatus, setRegisterStatus] = useState(null);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      const { email, name } = decoded;
+      
+      const res = await axios.post('http://localhost:5000/api/live-classes/register', { email, name });
+      if (res.status === 200) {
+        setRegisterStatus('Success! You are registered for the Live Class.');
+      }
+    } catch (error) {
+      console.error(error);
+      setRegisterStatus('Registration failed. Please try again.');
+    }
+  };
 
   return (
     <section className="relative w-full overflow-hidden">
@@ -50,7 +69,7 @@ const Hero = () => {
             <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-[#B89355] mb-5 tracking-wide">
               30 DAYS BASIC TAROT COURSE
             </h2>
-            <div className="flex flex-wrap justify-center lg:justify-start items-center gap-2 md:gap-4 text-base md:text-lg lg:text-xl font-bold text-[#0C3229] tracking-wider uppercase">
+            <div className="flex flex-wrap justify-center lg:justify-start items-center gap-2 md:gap-4 text-base md:text-lg lg:text-xl font-bold text-[#0C3229] tracking-wider uppercase mb-8">
               <span>Learn</span>
               <span className="text-[#B89355]">•</span>
               <span>Understand</span>
@@ -58,6 +77,25 @@ const Hero = () => {
               <span>Read</span>
               <span className="text-[#B89355]">•</span>
               <span>Transform</span>
+            </div>
+
+            <div className="mt-4 flex flex-col items-center lg:items-start">
+              <h3 className="text-lg font-bold text-[#0C3229] mb-3">Register for the Live Class</h3>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  setRegisterStatus('Google Sign-In failed');
+                }}
+                useOneTap
+                shape="pill"
+                theme="filled_blue"
+                text="continue_with"
+              />
+              {registerStatus && (
+                <p className={`mt-3 font-semibold ${registerStatus.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
+                  {registerStatus}
+                </p>
+              )}
             </div>
           </div>
         </div>

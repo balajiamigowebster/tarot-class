@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Dashboard from './pages/dashboard/Dashboard';
 import VideoClasses from './pages/VideoClasses';
@@ -8,7 +8,16 @@ import Navbar from './components/Navbar';
 import SyllabusCategoryPage from './pages/SyllabusCategoryPage';
 import LiveClassManager from './components/dashboard/LiveClassManager';
 import LiveClassRoom from './pages/LiveClassRoom';
+import Login from './pages/Login';
 import AOS from 'aos';
+
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
 import 'aos/dist/aos.css';
 
 function App() {
@@ -24,13 +33,14 @@ function App() {
       <BrowserRouter>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/videos" element={<VideoClasses />} />
-          <Route path="/materials" element={<StudyMaterial />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin/live-classes" element={<LiveClassManager />} />
-          <Route path="/live-class/:id" element={<LiveClassRoom />} />
-          <Route path="/syllabus/:slug" element={<SyllabusCategoryPage />} />
+          <Route path="/" element={<Login />} />
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/videos" element={<ProtectedRoute><VideoClasses /></ProtectedRoute>} />
+          <Route path="/materials" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/admin/live-classes" element={<ProtectedRoute><LiveClassManager /></ProtectedRoute>} />
+          <Route path="/live-class/:id" element={<ProtectedRoute><LiveClassRoom /></ProtectedRoute>} />
+          <Route path="/syllabus/:slug" element={<ProtectedRoute><SyllabusCategoryPage /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </div>

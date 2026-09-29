@@ -11,7 +11,9 @@ const Dashboard = () => {
   const { videos, pdfs, loading } = useContent();
   const [activeVideo, setActiveVideo] = useState(null);
   const [previewPdf, setPreviewPdf] = useState(null);
-  const [activeTab, setActiveTab] = useState('course'); // 'course', 'manage_videos', 'manage_pdfs'
+  
+  const role = localStorage.getItem('role') || 'student';
+  const [activeTab, setActiveTab] = useState(role === 'host' ? 'manage_live_classes' : 'course'); // 'course', 'manage_videos', 'manage_pdfs', 'manage_live_classes'
 
   useEffect(() => {
     if (videos.length > 0 && !activeVideo && activeTab === 'course') {
@@ -196,28 +198,32 @@ const Dashboard = () => {
             <h2 className="text-xl font-bold text-white tracking-tight">Dashboard</h2>
           </div>
           <nav className="flex-1 p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('course')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                activeTab === 'course' 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span className="font-medium">My Course</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('manage_syllabus')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-                activeTab === 'manage_syllabus' 
-                  ? 'bg-amber-500/10 text-amber-500' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <BookOpen className="w-5 h-5" />
-              <span className="font-medium">Manage Syllabus</span>
-            </button>
+            {role !== 'host' && (
+              <>
+                <button
+                  onClick={() => setActiveTab('course')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                    activeTab === 'course' 
+                      ? 'bg-amber-500/10 text-amber-500' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span className="font-medium">My Course</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('manage_syllabus')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                    activeTab === 'manage_syllabus' 
+                      ? 'bg-amber-500/10 text-amber-500' 
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="font-medium">Manage Syllabus</span>
+                </button>
+              </>
+            )}
             <button
               onClick={() => setActiveTab('manage_live_classes')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
@@ -231,12 +237,22 @@ const Dashboard = () => {
             </button>
             <div className="pt-4 mt-4 border-t border-indigo-900/50">
               <Link
-                to="/"
+                to="/home"
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white"
               >
                 <Globe className="w-5 h-5" />
                 <span className="font-medium">Go to Website</span>
               </Link>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('role');
+                  window.location.href = '/';
+                }}
+                className="mt-2 w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-red-400 hover:bg-red-900/20 hover:text-red-300"
+              >
+                <span className="font-medium">Logout</span>
+              </button>
             </div>
           </nav>
         </aside>

@@ -18,7 +18,7 @@ const Navbar = () => {
   }
   
   const navLinks = [
-    { name: 'Home', path: '/' },
+    { name: 'Home', path: '/home' },
     { 
       name: 'Syllabus', 
       path: '#',
@@ -37,7 +37,7 @@ const Navbar = () => {
         <div className="flex justify-between h-20 items-center">
           
           {/* Logo */}
-          <Link to="/" className="flex flex-col items-center justify-center">
+          <Link to="/home" className="flex flex-col items-center justify-center">
             <img 
               src="/images/website-logo-main.webp" 
               alt="SoulSage" 
@@ -52,7 +52,7 @@ const Navbar = () => {
                 <Link 
                   to={link.path}
                   className={`py-2 border-b-[3px] transition-colors flex items-center gap-1 ${
-                    location.pathname === link.path || (link.name === 'Home' && location.pathname === '/') || (link.name === 'Syllabus' && location.pathname.includes('/syllabus'))
+                    location.pathname === link.path || (link.name === 'Home' && location.pathname === '/home') || (link.name === 'Syllabus' && location.pathname.includes('/syllabus'))
                       ? 'border-[#0F3C34] text-[#1D2939]' 
                       : 'border-transparent hover:text-[#0F3C34] hover:border-slate-200'
                   }`}
