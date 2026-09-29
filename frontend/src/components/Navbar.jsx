@@ -15,7 +15,7 @@ const Navbar = () => {
       .catch(err => console.error("Error fetching categories for navbar:", err));
   }, []);
 
-  if (location.pathname.startsWith('/dashboard')) {
+  if (location.pathname.startsWith('/dashboard') || location.pathname === '/') {
     return null;
   }
   

@@ -8,6 +8,22 @@ import { config } from '../../config';
 const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [registerStatus, setRegisterStatus] = useState(null);
+  const [latestClass, setLatestClass] = useState(null);
+
+  React.useEffect(() => {
+    const fetchLatestClass = async () => {
+      try {
+        const res = await axios.get(`${config.API_BASE_URL}/api/live-classes`);
+        if (res.data && res.data.length > 0) {
+          // Assuming the backend returns them in order, or we can just take the last one
+          setLatestClass(res.data[res.data.length - 1]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch live classes for Hero", err);
+      }
+    };
+    fetchLatestClass();
+  }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -64,9 +80,21 @@ const Hero = () => {
             <h1 className="text-[1.8rem] md:text-[2.8rem] font-serif leading-[1.1] mb-5 font-bold text-[#0C3229] uppercase tracking-tight">
               Sara Tarot Card Reader
             </h1>
-            <div className="bg-[#E41E5D] text-white px-5 py-1.5 rounded-md font-bold tracking-[0.2em] text-base md:text-lg lg:text-xl mb-6 shadow-lg shadow-[#E41E5D]/30 inline-block">
-              LIVE CLASS
-            </div>
+            
+            {latestClass ? (
+              <Link 
+                to={`/live-class/${latestClass.meetingUrl}`}
+                className="bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0C3229] px-4 py-1.5 rounded-full font-bold tracking-[0.1em] text-sm md:text-base mb-6 shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] inline-flex items-center gap-2 hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse border border-white"></div>
+                JOIN LIVE CLASS
+              </Link>
+            ) : (
+              <div className="bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0C3229] px-4 py-1.5 rounded-full font-bold tracking-[0.1em] text-sm md:text-base mb-6 shadow-lg shadow-amber-500/30 inline-block">
+                LIVE CLASS
+              </div>
+            )}
+
             <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-[#B89355] mb-5 tracking-wide">
               30 DAYS BASIC TAROT COURSE
             </h2>
