@@ -87,7 +87,6 @@ const Hero = () => {
                 onError={() => {
                   setRegisterStatus('Google Sign-In failed');
                 }}
-                useOneTap
                 shape="pill"
                 theme="filled_blue"
                 text="continue_with"

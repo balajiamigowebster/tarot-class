@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, User } from 'lucide-react';
 import { config } from '../config';
 
 const Navbar = () => {
   const location = useLocation();
   const [syllabusCategories, setSyllabusCategories] = useState([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     fetch(`${config.API_BASE_URL}/api/syllabus/categories`)
@@ -82,21 +84,75 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Profile */}
+          {/* Profile & Mobile Toggle */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-sm">
-              <img 
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=128&q=80" 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
+            <div className="hidden md:flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm text-slate-600">
+                <User className="w-5 h-5" />
+              </div>
+              <span className="hidden lg:block text-[15px] font-bold text-[#1D2939]">
+                Profile
+              </span>
             </div>
-            <span className="hidden lg:block text-[15px] font-bold text-[#1D2939]">
-              Gen Torn Reader Profile
-            </span>
+            
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2 text-[#1D2939] hover:bg-slate-100 rounded-lg transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-t border-slate-100 absolute w-full shadow-lg">
+          <div className="px-4 pt-2 pb-6 space-y-1 max-h-[80vh] overflow-y-auto">
+            {navLinks.map((link) => (
+              <div key={link.name}>
+                <Link 
+                  to={link.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-md text-base font-bold ${
+                    location.pathname === link.path || (link.name === 'Home' && location.pathname === '/home')
+                      ? 'bg-[#0F3C34]/10 text-[#0F3C34]' 
+                      : 'text-[#1D2939] hover:bg-slate-50'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+                {link.submenus && (
+                  <div className="pl-6 mt-1 space-y-1 border-l-2 border-slate-100 ml-4">
+                    {link.submenus.map(sub => (
+                      <Link 
+                        key={sub.name} 
+                        to={sub.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`block px-3 py-2 text-sm font-semibold rounded-md ${
+                          location.pathname === sub.path ? 'text-[#B89355]' : 'text-gray-600 hover:text-[#B89355]'
+                        }`}
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-3 px-3">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-600">
+                <User className="w-5 h-5" />
+              </div>
+              <span className="text-[15px] font-bold text-[#1D2939]">
+                Profile
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

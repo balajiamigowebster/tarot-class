@@ -11,6 +11,7 @@ const Dashboard = () => {
   const { videos, pdfs, loading } = useContent();
   const [activeVideo, setActiveVideo] = useState(null);
   const [previewPdf, setPreviewPdf] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const role = localStorage.getItem('role') || 'student';
   const [activeTab, setActiveTab] = useState(role === 'host' ? 'manage_live_classes' : 'course'); // 'course', 'manage_videos', 'manage_pdfs', 'manage_live_classes'
@@ -189,19 +190,28 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen font-sans selection:bg-amber-500/30 flex flex-col bg-slate-950">
-      <Navigation />
+      <Navigation onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       
-      <div className="flex flex-1 overflow-hidden pt-16">
+      <div className="flex flex-1 overflow-hidden relative">
+        
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-64 bg-slate-900 border-r border-indigo-900/50 flex flex-col hidden md:flex overflow-y-auto z-30">
-          <div className="p-6 border-b border-indigo-900/50">
+        <aside className={`absolute md:relative w-64 bg-slate-900 border-r border-indigo-900/50 flex-col overflow-y-auto z-50 h-full transition-transform duration-300 md:translate-x-0 ${isSidebarOpen ? 'translate-x-0 flex' : '-translate-x-full hidden md:flex'}`}>
+          <div className="p-6 border-b border-indigo-900/50 flex justify-between items-center">
             <h2 className="text-xl font-bold text-white tracking-tight">Dashboard</h2>
           </div>
           <nav className="flex-1 p-4 space-y-2">
             {role !== 'host' && (
               <>
                 <button
-                  onClick={() => setActiveTab('course')}
+                  onClick={() => { setActiveTab('course'); setIsSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                     activeTab === 'course' 
                       ? 'bg-amber-500/10 text-amber-500' 
@@ -212,7 +222,7 @@ const Dashboard = () => {
                   <span className="font-medium">My Course</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('manage_syllabus')}
+                  onClick={() => { setActiveTab('manage_syllabus'); setIsSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                     activeTab === 'manage_syllabus' 
                       ? 'bg-amber-500/10 text-amber-500' 
@@ -225,7 +235,7 @@ const Dashboard = () => {
               </>
             )}
             <button
-              onClick={() => setActiveTab('manage_live_classes')}
+              onClick={() => { setActiveTab('manage_live_classes'); setIsSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
                 activeTab === 'manage_live_classes' 
                   ? 'bg-amber-500/10 text-amber-500' 
