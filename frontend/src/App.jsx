@@ -6,6 +6,8 @@ import VideoClasses from './pages/VideoClasses';
 import StudyMaterial from './pages/StudyMaterial';
 import Navbar from './components/Navbar';
 import SyllabusCategoryPage from './pages/SyllabusCategoryPage';
+import LiveClassManager from './components/dashboard/LiveClassManager';
+import LiveClassRoom from './pages/LiveClassRoom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -26,6 +28,8 @@ function App() {
           <Route path="/videos" element={<VideoClasses />} />
           <Route path="/materials" element={<StudyMaterial />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin/live-classes" element={<LiveClassManager />} />
+          <Route path="/live-class/:id" element={<LiveClassRoom />} />
           <Route path="/syllabus/:slug" element={<SyllabusCategoryPage />} />
         </Routes>
       </BrowserRouter>

@@ -5,6 +5,7 @@ import PdfModal from '../../components/PdfModal';
 import { Play, PlayCircle, FileText, Download, Eye, Clock, BookOpen, LayoutDashboard, Video, FileEdit, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SyllabusManagement from '../../components/dashboard/SyllabusManagement';
+import LiveClassManager from '../../components/dashboard/LiveClassManager';
 
 const Dashboard = () => {
   const { videos, pdfs, loading } = useContent();
@@ -217,6 +218,17 @@ const Dashboard = () => {
               <BookOpen className="w-5 h-5" />
               <span className="font-medium">Manage Syllabus</span>
             </button>
+            <button
+              onClick={() => setActiveTab('manage_live_classes')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                activeTab === 'manage_live_classes' 
+                  ? 'bg-amber-500/10 text-amber-500' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Video className="w-5 h-5" />
+              <span className="font-medium">Live Classes</span>
+            </button>
             <div className="pt-4 mt-4 border-t border-indigo-900/50">
               <Link
                 to="/"
@@ -234,6 +246,7 @@ const Dashboard = () => {
           <div className="max-w-7xl mx-auto">
             {activeTab === 'course' && renderCourseContent()}
             {activeTab === 'manage_syllabus' && <SyllabusManagement />}
+            {activeTab === 'manage_live_classes' && <LiveClassManager />}
           </div>
         </main>
       </div>
