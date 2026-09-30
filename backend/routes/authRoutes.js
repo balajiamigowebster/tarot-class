@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const AllowedStudent = require('../models/AllowedStudent');
+
+// In-memory store for OTPs (in production, use Redis or DB)
+const otpStore = {};
 
 router.post('/login', async (req, res) => {
   try {
@@ -39,6 +43,89 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
     
     res.json({ token, role: user.role });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Request OTP for student login
+router.post('/request-otp', async (req, res) => {
+  try {
+    const { phone_number } = req.body;
+    
+    if (!phone_number) {
+      return res.status(400).json({ message: 'Phone number is required' });
+    }
+
+    const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
+    if (!student) {
+      return res.status(403).json({ message: 'Phone number not registered or inactive.' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store it with expiration (e.g., 5 mins)
+    otpStore[phone_number] = {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000 
+    };
+
+    // In a real app, send this via SMS (Twilio, SNS, etc.)
+    console.log(`[MOCK SMS] OTP for ${phone_number} is: ${otp}`);
+
+    res.json({ success: true, message: 'OTP sent successfully' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify OTP for student login
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { phone_number, otp } = req.body;
+    
+    if (!phone_number || !otp) {
+      return res.status(400).json({ message: 'Phone number and OTP are required' });
+    }
+
+    const storedOtpData = otpStore[phone_number];
+
+    if (!storedOtpData) {
+      return res.status(400).json({ message: 'No OTP requested for this phone number' });
+    }
+
+    if (Date.now() > storedOtpData.expiresAt) {
+      delete otpStore[phone_number];
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    if (storedOtpData.otp !== otp.toString()) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // OTP matches, delete it
+    delete otpStore[phone_number];
+
+    // Check if student exists just to be safe
+    const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
+    if (!student) {
+      return res.status(403).json({ message: 'Account no longer active' });
+    }
+
+    const payload = {
+      id: student.id,
+      phone: student.phone_number,
+      role: 'student'
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({ success: true, token, role: 'student', phone: student.phone_number });
 
   } catch (err) {
     console.error(err);

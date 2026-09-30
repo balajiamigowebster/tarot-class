@@ -1,4 +1,4 @@
-const UserPurchase = require('../models/UserPurchase');
+const AllowedStudent = require('../models/AllowedStudent');
 
 exports.checkAccess = async (req, res) => {
   const { phone } = req.params;
@@ -8,19 +8,18 @@ exports.checkAccess = async (req, res) => {
   }
 
   try {
-    const purchase = await UserPurchase.findOne({
-      where: { phone_number: phone },
-      order: [['purchase_date', 'DESC']]
+    const student = await AllowedStudent.findOne({
+      where: { phone_number: phone }
     });
 
-    if (!purchase) {
+    if (!student) {
       return res.json({ success: true, hasAccess: false, status: 'NOT_FOUND' });
     }
 
-    if (purchase.payment_status === 'PAID') {
-      return res.json({ success: true, hasAccess: true, status: 'PAID' });
+    if (student.status === 'active') {
+      return res.json({ success: true, hasAccess: true, status: 'PAID' }); // Kept PAID to maintain frontend compatibility
     } else {
-      return res.json({ success: true, hasAccess: false, status: purchase.payment_status });
+      return res.json({ success: true, hasAccess: false, status: student.status });
     }
 
   } catch (error) {
