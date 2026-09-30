@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const AllowedStudent = require('../models/AllowedStudent');
 
 // In-memory store for OTPs (in production, use Redis or DB)
@@ -50,13 +51,13 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Request OTP for student login
+// Request OTP for student login via Email
 router.post('/request-otp', async (req, res) => {
   try {
-    const { phone_number } = req.body;
+    const { phone_number, email } = req.body;
     
-    if (!phone_number) {
-      return res.status(400).json({ message: 'Phone number is required' });
+    if (!phone_number || !email) {
+      return res.status(400).json({ message: 'Phone number and Email are required' });
     }
 
     const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
@@ -73,14 +74,30 @@ router.post('/request-otp', async (req, res) => {
       expiresAt: Date.now() + 5 * 60 * 1000 
     };
 
-    // In a real app, send this via SMS (Twilio, SNS, etc.)
-    console.log(`[MOCK SMS] OTP for ${phone_number} is: ${otp}`);
+    // Send Email using Nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_EMAIL, 
+        pass: process.env.SMTP_PASSWORD 
+      }
+    });
 
-    res.json({ success: true, message: 'OTP sent successfully' });
+    const mailOptions = {
+      from: process.env.SMTP_EMAIL,
+      to: email,
+      subject: 'Your Tarot Classes Login OTP',
+      text: `Your OTP for logging into Tarot Classes is: ${otp}. It is valid for 5 minutes. Do not share this with anyone.`
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL SENT] OTP ${otp} sent to ${email} for phone ${phone_number}`);
+
+    res.json({ success: true, message: 'OTP sent successfully to your email' });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('OTP Send Error:', err);
+    res.status(500).json({ message: 'Failed to send OTP. Please check server email configuration.' });
   }
 });
 

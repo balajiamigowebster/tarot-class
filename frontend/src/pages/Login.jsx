@@ -10,8 +10,9 @@ const Login = () => {
   const [loginMode, setLoginMode] = useState('student');
   
   // Student flow state
-  const [step, setStep] = useState(1); // 1 = phone, 2 = otp
+  const [step, setStep] = useState(1); // 1 = phone/email, 2 = otp
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [timer, setTimer] = useState(0);
 
@@ -50,7 +51,10 @@ const Login = () => {
     setLoading(true);
     setError(null);
     try {
-      await axios.post(`${config.API_BASE_URL}/api/auth/request-otp`, { phone_number: phoneNumber });
+      await axios.post(`${config.API_BASE_URL}/api/auth/request-otp`, { 
+        phone_number: phoneNumber,
+        email: email 
+      });
       setStep(2);
       setTimer(30); // 30 second wait before resend
     } catch (err) {
@@ -125,24 +129,37 @@ const Login = () => {
           <>
             {step === 1 ? (
               <form className="mt-8 space-y-6" onSubmit={handleRequestOtp}>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 border border-indigo-900/50 rounded-xl bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
-                    placeholder="+919876543210"
-                  />
-                  <p className="mt-2 text-xs text-slate-500">Must match the number used during purchase.</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="appearance-none block w-full px-4 py-3 border border-indigo-900/50 rounded-xl bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                      placeholder="+919876543210"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="appearance-none block w-full px-4 py-3 border border-indigo-900/50 rounded-xl bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                      placeholder="Enter your email to receive OTP"
+                    />
+                    <p className="mt-2 text-xs text-slate-500">Must match the phone number used during purchase.</p>
+                  </div>
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
                   className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-slate-900 bg-amber-500 hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] hover:shadow-[0_0_25px_rgba(245,158,11,0.5)] disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send OTP'}
+                  {loading ? 'Sending...' : 'Send OTP via Email'}
                 </button>
               </form>
             ) : (
@@ -180,7 +197,7 @@ const Login = () => {
                     onClick={() => { setStep(1); setOtp(''); setError(null); }}
                     className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
                   >
-                    Change Phone Number
+                    Change Phone Number / Email
                   </button>
                 </div>
               </form>
