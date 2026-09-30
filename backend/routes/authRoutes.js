@@ -97,7 +97,10 @@ router.post('/request-otp', async (req, res) => {
 
   } catch (err) {
     console.error('OTP Send Error:', err);
-    res.status(500).json({ message: 'Failed to send OTP. Please check server email configuration.' });
+    res.status(500).json({ 
+      message: 'Failed to send OTP. Please check server email configuration.', 
+      details: err.message || err.toString()
+    });
   }
 });
 
