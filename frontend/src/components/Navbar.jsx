@@ -53,8 +53,8 @@ const Navbar = () => {
           <Link to="/home" className="flex flex-col items-center justify-center">
             <img 
               src="/images/website-logo-main.webp" 
-              alt="SoulSage" 
-              className="h-10 md:h-12 w-auto object-contain" 
+              alt="Sara Tarot" 
+              className="h-12 md:h-14 w-auto object-contain rounded-xl shadow-sm" 
             />
           </Link>
 
@@ -64,15 +64,15 @@ const Navbar = () => {
               <div key={link.name} className="relative group">
                 <Link 
                   to={link.path}
-                  className={`py-2 border-b-[3px] transition-colors flex items-center gap-1 ${
+                  className={`px-5 py-2.5 rounded-full transition-all duration-300 flex items-center gap-1.5 font-semibold text-[15px] border border-transparent ${
                     location.pathname === link.path || (link.name === 'Home' && location.pathname === '/home') || (link.name === 'Syllabus' && location.pathname.includes('/syllabus'))
-                      ? 'border-[#0F3C34] text-[#1D2939]' 
-                      : 'border-transparent hover:text-[#0F3C34] hover:border-slate-200'
+                      ? 'bg-gradient-to-r from-[#B89355] to-[#c19b52] text-white shadow-md shadow-[#B89355]/30 border-[#B89355]/20' 
+                      : 'text-[#1D2939] hover:bg-[#B89355]/10 hover:text-[#0F3C34]'
                   }`}
                 >
                   {link.name}
                   {link.submenus && (
-                    <svg className="w-4 h-4 text-gray-500 group-hover:text-[#0F3C34] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg className={`w-4 h-4 transition-colors ${location.pathname.includes('/syllabus') ? 'text-white' : 'text-gray-500 group-hover:text-[#0F3C34]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
                   )}
                 </Link>
 

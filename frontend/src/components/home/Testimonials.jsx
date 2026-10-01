@@ -72,47 +72,34 @@ const Testimonials = () => {
         </div>
 
         {/* Instructor Section */}
-        <div className="bg-[#FAF8F5] rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100/50 mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0C3229] font-serif mb-10 text-center">
-            Meet Your Instructor
-          </h2>
-          
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 max-w-4xl mx-auto">
-            <div className="flex-shrink-0">
+        <div className="mb-10 mt-16 max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12 mx-auto">
+            <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
               <img 
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80" 
+                src="/images/tarot-class.webp" 
                 alt="Sara Tarot Reader" 
-                className="w-48 h-48 md:w-56 md:h-56 rounded-2xl object-cover shadow-md"
+                className="w-56 h-72 md:w-72 md:h-96 rounded-2xl object-cover shadow-lg object-top"
               />
             </div>
             
-            <div className="flex-1 text-center md:text-left">
+            <div className="flex-1 text-center md:text-left pt-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0C3229] font-serif mb-6">
+                Meet Your Instructor
+              </h2>
               <h3 className="text-2xl font-bold text-[#1D2939] mb-1">Sara Tarot Reader</h3>
-              <p className="text-[#0C3229] font-bold mb-4">Certified Tarot Professionalist</p>
+              <p className="text-[#0C3229] font-bold mb-6">Certified Tarot Professional</p>
               
-              <p className="text-[#475467] mb-6 leading-relaxed text-sm md:text-base">
-                With over 15 years of experience, Sara brings clarity and intuition to every lesson. Started back for passion more and has experienced every year.
+              <p className="text-[#475467] mb-4 leading-relaxed text-sm md:text-base">
+                Sara's journey into the mystical realm of Tarot and spiritual healing began as a deeply personal calling to help others find alignment. Guided by decades of study and intuitive practice, she founded Sara Tarot to bridge the gap between the material world and divine wisdom.
               </p>
-              
-              <button className="bg-[#B89355] hover:bg-[#9c7d48] text-white px-6 py-2.5 rounded-md font-bold text-sm transition-colors shadow-sm">
-                Read Full Bio
-              </button>
+              <p className="text-[#475467] leading-relaxed text-sm md:text-base">
+                Through personalized consultations and spiritual classes, Sara provides a compassionate, empowering space. Every reading and session is crafted to decode life's complexities and guide your spirit toward absolute clarity.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Footer Navigation */}
-        <div className="border-t border-slate-200/60 pt-8 mt-12 pb-4">
-          <div className="flex justify-center gap-8 mb-6">
-            <Link to="/" className="text-[#0C3229] font-bold hover:text-[#B89355] transition-colors border-b-2 border-[#0C3229] pb-1">Home</Link>
-            <Link to="#" className="text-[#1D2939] font-bold hover:text-[#B89355] transition-colors">Syllabus</Link>
-            <Link to="#" className="text-[#1D2939] font-bold hover:text-[#B89355] transition-colors">Contact</Link>
-          </div>
-          
-          <p className="text-center text-sm text-[#475467] font-medium">
-            Design by <a href="https://amigowebster.com/" target="_blank" rel="noopener noreferrer" className="text-[#B89355] hover:text-[#9c7d48] font-bold hover:underline transition-colors">AmigoWebster</a>
-          </p>
-        </div>
+
 
       </div>
     </section>

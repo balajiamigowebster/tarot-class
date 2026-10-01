@@ -10,6 +10,7 @@ import VideoPlayerPage from './pages/VideoPlayerPage';
 import LiveClassManager from './components/dashboard/LiveClassManager';
 import LiveClassRoom from './pages/LiveClassRoom';
 import Login from './pages/Login';
+import Footer from './components/Footer';
 import AOS from 'aos';
 
 const ProtectedRoute = ({ children }) => {
@@ -44,6 +45,7 @@ function App() {
           <Route path="/syllabus/:slug" element={<ProtectedRoute><SyllabusCategoryPage /></ProtectedRoute>} />
           <Route path="/syllabus/:slug/video/:videoId" element={<ProtectedRoute><VideoPlayerPage /></ProtectedRoute>} />
         </Routes>
+        <Footer />
       </BrowserRouter>
     </div>
   );

@@ -147,9 +147,12 @@ const Hero = () => {
               <span className="text-[#0C3229] block">Tarot Classes</span>
             </h2>
             
-            <Link to="/videos" className="inline-block bg-[#B69352] hover:bg-[#a38043] text-white text-lg md:text-xl font-semibold py-3 px-8 md:py-3.5 md:px-10 rounded-md transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+            <button 
+              onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })} 
+              className="inline-block bg-[#B69352] hover:bg-[#a38043] text-white text-lg md:text-xl font-semibold py-3 px-8 md:py-3.5 md:px-10 rounded-md transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            >
               Start Learning Now
-            </Link>
+            </button>
           </div>
         </div>
 
