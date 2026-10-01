@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { config } from '../config';
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [syllabusCategories, setSyllabusCategories] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const role = localStorage.getItem('role');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    navigate('/');
+  };
   
   useEffect(() => {
     fetch(`${config.API_BASE_URL}/api/syllabus/categories`)
@@ -28,10 +37,12 @@ const Navbar = () => {
         name: cat.name,
         path: `/syllabus/${cat.slug}`
       }))
-    },
-    // { name: 'Courses', path: '/videos' },
-    { name: 'My Dashboard', path: '/dashboard' }
+    }
   ];
+
+  if (role === 'admin' || role === 'host') {
+    navLinks.push({ name: 'My Dashboard', path: '/dashboard' });
+  }
 
   return (
     <nav className="bg-[#FCFBFA] sticky top-0 z-50">
@@ -93,6 +104,13 @@ const Navbar = () => {
               <span className="hidden lg:block text-[15px] font-bold text-[#1D2939]">
                 Profile
               </span>
+              <button 
+                onClick={handleLogout}
+                className="ml-2 flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </div>
             
             {/* Mobile Menu Button */}
@@ -142,13 +160,22 @@ const Navbar = () => {
               </div>
             ))}
             
-            <div className="mt-6 pt-6 border-t border-slate-100 flex items-center gap-3 px-3">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-600">
-                <User className="w-5 h-5" />
+            <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-4 px-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-600">
+                  <User className="w-5 h-5" />
+                </div>
+                <span className="text-[15px] font-bold text-[#1D2939]">
+                  Profile
+                </span>
               </div>
-              <span className="text-[15px] font-bold text-[#1D2939]">
-                Profile
-              </span>
+              <button 
+                onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </div>
           </div>
         </div>
