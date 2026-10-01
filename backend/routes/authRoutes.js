@@ -51,92 +51,23 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Request OTP for student login via Email
-router.post('/request-otp', async (req, res) => {
+// Direct student login via Phone Number
+router.post('/student-login', async (req, res) => {
   try {
-    const { phone_number, email } = req.body;
+    const { phone_number } = req.body;
     
-    if (!phone_number || !email) {
-      return res.status(400).json({ message: 'Phone number and Email are required' });
+    if (!phone_number) {
+      return res.status(400).json({ message: 'Phone number is required' });
     }
 
+    // Check if the student is in the allowed_students table and active
     const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
-    if (!student) {
-      return res.status(403).json({ message: 'Phone number not registered or inactive.' });
-    }
-
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store it with expiration (e.g., 5 mins)
-    otpStore[phone_number] = {
-      otp,
-      expiresAt: Date.now() + 5 * 60 * 1000 
-    };
-
-    // Send Email using Nodemailer
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_EMAIL, 
-        pass: process.env.SMTP_PASSWORD 
-      }
-    });
-
-    const mailOptions = {
-      from: process.env.SMTP_EMAIL,
-      to: email,
-      subject: 'Your Tarot Classes Login OTP',
-      text: `Your OTP for logging into Tarot Classes is: ${otp}. It is valid for 5 minutes. Do not share this with anyone.`
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SENT] OTP ${otp} sent to ${email} for phone ${phone_number}`);
-
-    res.json({ success: true, message: 'OTP sent successfully to your email' });
-
-  } catch (err) {
-    console.error('OTP Send Error:', err);
-    res.status(500).json({ 
-      message: 'Failed to send OTP. Please check server email configuration.', 
-      details: err.message || err.toString()
-    });
-  }
-});
-
-// Verify OTP for student login
-router.post('/verify-otp', async (req, res) => {
-  try {
-    const { phone_number, otp } = req.body;
-    
-    if (!phone_number || !otp) {
-      return res.status(400).json({ message: 'Phone number and OTP are required' });
-    }
-
-    const storedOtpData = otpStore[phone_number];
-
-    if (!storedOtpData) {
-      return res.status(400).json({ message: 'No OTP requested for this phone number' });
-    }
-
-    if (Date.now() > storedOtpData.expiresAt) {
-      delete otpStore[phone_number];
-      return res.status(400).json({ message: 'OTP has expired' });
-    }
-
-    if (storedOtpData.otp !== otp.toString()) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    // OTP matches, delete it
-    delete otpStore[phone_number];
-
-    // Check if student exists just to be safe
-    const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
     if (!student) {
-      return res.status(403).json({ message: 'Account no longer active' });
+      return res.status(403).json({ message: 'No access to this website. You have not purchased the class.' });
     }
 
+    // Direct Login - Generate Token
     const payload = {
       id: student.id,
       phone: student.phone_number,
@@ -148,9 +79,14 @@ router.post('/verify-otp', async (req, res) => {
     res.json({ success: true, token, role: 'student', phone: student.phone_number });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Student Login Error:', err);
+    res.status(500).json({ 
+      message: 'Server error during login.', 
+      details: err.message || err.toString()
+    });
   }
 });
+
+
 
 module.exports = router;
