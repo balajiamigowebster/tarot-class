@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { config } from '../config';
 
 const Footer = () => {
   const [syllabusCategories, setSyllabusCategories] = useState([]);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${config.API_BASE_URL}/api/syllabus/categories`)
@@ -54,10 +55,10 @@ const Footer = () => {
                 </li>
                 <li>
                   <button onClick={() => {
-                    if (window.location.pathname === '/home') {
+                    if (location.pathname === '/home') {
                       document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' });
                     } else {
-                      window.location.href = '/home#categories';
+                      navigate('/home#categories');
                     }
                   }} className="text-white/80 hover:text-[#B89355] transition-colors font-medium">
                     All Classes

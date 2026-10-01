@@ -11,6 +11,7 @@ import LiveClassManager from './components/dashboard/LiveClassManager';
 import LiveClassRoom from './pages/LiveClassRoom';
 import Login from './pages/Login';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import AOS from 'aos';
 
 const ProtectedRoute = ({ children }) => {
@@ -33,6 +34,7 @@ function App() {
   return (
     <div className="bg-[radial-gradient(ellipse_80%_100%_at_100%_50%,rgba(161,61,142,0.10)_0%,rgba(161,61,142,0.04)_40%,transparent_70%),linear-gradient(135deg,#FFFFFF_0%,#FDFCFF_40%,#F5EEFF_70%,#EAD6FA_100%)] text-slate-900 min-h-screen font-sans selection:bg-[#c19b52]/30">
       <BrowserRouter>
+        <ScrollToTop />
         <Navbar />
         <Routes>
           <Route path="/" element={<Login />} />
