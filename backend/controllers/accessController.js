@@ -27,3 +27,42 @@ exports.checkAccess = async (req, res) => {
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 };
+
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await AllowedStudent.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(students);
+  } catch (error) {
+    console.error('Error getting students:', error);
+    res.status(500).json({ error: 'Failed to retrieve students' });
+  }
+};
+
+exports.addStudent = async (req, res) => {
+  try {
+    const { phone_number, name } = req.body;
+    if (!phone_number) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+    const newStudent = await AllowedStudent.create({ phone_number, name });
+    res.status(201).json(newStudent);
+  } catch (error) {
+    console.error('Error adding student:', error);
+    res.status(500).json({ error: error.message || 'Failed to add student' });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const student = await AllowedStudent.findByPk(id);
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    await student.destroy();
+    res.json({ message: 'Student deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ error: 'Failed to delete student' });
+  }
+};

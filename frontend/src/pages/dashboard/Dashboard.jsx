@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useContent } from '../../hooks/useContent';
 import Navigation from '../../components/Navigation';
 import PdfModal from '../../components/PdfModal';
-import { Play, PlayCircle, FileText, Download, Eye, Clock, BookOpen, LayoutDashboard, Video, FileEdit, Globe } from 'lucide-react';
+import { Play, PlayCircle, FileText, Download, Eye, Clock, BookOpen, LayoutDashboard, Video, FileEdit, Globe, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SyllabusManagement from '../../components/dashboard/SyllabusManagement';
 import LiveClassManager from '../../components/dashboard/LiveClassManager';
+import PurchasedStudents from '../../components/dashboard/PurchasedStudents';
 
 const Dashboard = () => {
   const { videos, pdfs, loading } = useContent();
@@ -234,6 +235,19 @@ const Dashboard = () => {
                 </button>
               </>
             )}
+            {role === 'admin' && (
+              <button
+                onClick={() => { setActiveTab('manage_students'); setIsSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+                  activeTab === 'manage_students' 
+                    ? 'bg-amber-500/10 text-amber-500' 
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <Users className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium whitespace-nowrap">Purchased Students</span>
+              </button>
+            )}
             <button
               onClick={() => { setActiveTab('manage_live_classes'); setIsSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
@@ -273,6 +287,7 @@ const Dashboard = () => {
             {activeTab === 'course' && renderCourseContent()}
             {activeTab === 'manage_syllabus' && <SyllabusManagement />}
             {activeTab === 'manage_live_classes' && <LiveClassManager />}
+            {activeTab === 'manage_students' && <PurchasedStudents />}
           </div>
         </main>
       </div>
