@@ -32,6 +32,10 @@ const SyllabusVideo = sequelize.define('SyllabusVideo', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  subcategory: {
+    type: DataTypes.ENUM('major', 'minor'),
+    allowNull: true
+  },
   duration: {
     type: DataTypes.STRING,
     allowNull: true

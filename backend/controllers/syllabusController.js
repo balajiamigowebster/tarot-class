@@ -54,6 +54,7 @@ exports.addVideo = async (req, res) => {
       video_url: videoUrl,
       thumbnail_url: thumbnailUrl,
       duration,
+      subcategory: req.body.subcategory || null,
       order: order || 0
     });
 
@@ -91,6 +92,9 @@ exports.updateVideo = async (req, res) => {
     video.duration = duration !== undefined ? duration : video.duration;
     video.video_url = videoUrl;
     video.thumbnail_url = thumbnailUrl;
+    if (req.body.subcategory !== undefined) {
+      video.subcategory = req.body.subcategory;
+    }
     
     await video.save();
     res.json(video);
@@ -142,12 +146,45 @@ exports.addImage = async (req, res) => {
       category_id,
       title,
       image_url: imageUrl,
+      content: req.body.content || null,
+      subcategory: req.body.subcategory || null,
       order: order || 0
     });
 
     res.status(201).json(newImage);
   } catch (error) {
     console.error("Add image error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content } = req.body;
+    
+    const image = await SyllabusImage.findByPk(id);
+    if (!image) return res.status(404).json({ message: 'Image not found' });
+    
+    const categorySlug = req.body.categorySlug || 'uncategorized';
+
+    let imageUrl = image.image_url;
+    if (req.file) {
+      imageUrl = `/api/uploads/syllabus/${categorySlug}/${req.file.filename}`;
+    }
+
+    image.title = title !== undefined ? title : image.title;
+    image.content = content !== undefined ? content : image.content;
+    image.image_url = imageUrl;
+    
+    if (req.body.subcategory !== undefined) {
+      image.subcategory = req.body.subcategory;
+    }
+    
+    await image.save();
+    res.json(image);
+  } catch (error) {
+    console.error("Update image error:", error);
     res.status(500).json({ error: error.message });
   }
 };

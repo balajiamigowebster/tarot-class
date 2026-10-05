@@ -24,6 +24,14 @@ const SyllabusImage = sequelize.define('SyllabusImage', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  content: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  subcategory: {
+    type: DataTypes.ENUM('major', 'minor'),
+    allowNull: true
+  },
   order: {
     type: DataTypes.INTEGER,
     defaultValue: 0

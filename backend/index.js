@@ -74,7 +74,7 @@ app.use('/api/save-student', studentSyncRoutes);
 // Sync and Seed Database
 const syncAndSeed = async () => {
   try {
-    await sequelize.sync({ force: false }); // Change to true to drop tables on restart
+    await sequelize.sync({ alter: true }); // Change to true to drop tables on restart
     console.log('✅ Sequelize Models Synced');
 
     // Auto-seed if empty

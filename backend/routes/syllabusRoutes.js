@@ -11,6 +11,7 @@ router.get('/categories/:categoryId/pdfs', syllabusController.getPdfsByCategory)
 router.post('/videos', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), syllabusController.addVideo);
 router.put('/videos/:id', upload.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]), syllabusController.updateVideo);
 router.post('/images', upload.single('image'), syllabusController.addImage);
+router.put('/images/:id', upload.single('image'), syllabusController.updateImage);
 router.post('/pdfs', upload.single('pdf'), syllabusController.addPdf);
 
 router.delete('/videos/:id', syllabusController.deleteVideo);

@@ -13,6 +13,7 @@ const SyllabusManagement = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [editVideoId, setEditVideoId] = useState(null);
+  const [videoSubcategory, setVideoSubcategory] = useState('minor');
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,8 +21,11 @@ const SyllabusManagement = () => {
   const [images, setImages] = useState([]);
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageTitle, setImageTitle] = useState('');
+  const [imageContent, setImageContent] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
+  const [imageSubcategory, setImageSubcategory] = useState('minor');
+  const [editImageId, setEditImageId] = useState(null);
 
   const [pdfs, setPdfs] = useState([]);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -83,6 +87,9 @@ const SyllabusManagement = () => {
     formData.append('duration', duration);
     formData.append('category_id', selectedCategory.id);
     formData.append('categorySlug', selectedCategory.slug);
+    if (selectedCategory.slug === 'cards-meaning') {
+      formData.append('subcategory', videoSubcategory);
+    }
     if (videoFile) formData.append('video', videoFile);
     if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
 
@@ -112,6 +119,7 @@ const SyllabusManagement = () => {
         setVideoFile(null);
         setThumbnailFile(null);
         setEditVideoId(null);
+        setVideoSubcategory('minor');
         setShowUploadModal(false);
         setUploadProgress(0);
         fetchVideos();
@@ -129,6 +137,7 @@ const SyllabusManagement = () => {
     setTitle(video.title);
     setDescription(video.description || '');
     setDuration(video.duration || '');
+    setVideoSubcategory(video.subcategory || 'minor');
     setEditVideoId(video.id);
     setShowUploadModal(true);
   };
@@ -146,23 +155,39 @@ const SyllabusManagement = () => {
 
   const handleImageUpload = async (e) => {
     e.preventDefault();
-    if (!imageFile) return alert("Image file is required");
+    if (!editImageId && !imageFile) return alert("Image file is required");
     
     setImageLoading(true);
     const formData = new FormData();
     formData.append('title', imageTitle);
     formData.append('category_id', selectedCategory.id);
     formData.append('categorySlug', selectedCategory.slug);
-    formData.append('image', imageFile);
+    if (selectedCategory.slug === 'cards-meaning') {
+      formData.append('subcategory', imageSubcategory);
+    }
+    if (imageContent) {
+      formData.append('content', imageContent);
+    }
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
 
     try {
-      const res = await fetch(`${config.API_BASE_URL}/api/syllabus/images`, {
-        method: 'POST',
+      const url = editImageId 
+        ? `${config.API_BASE_URL}/api/syllabus/images/${editImageId}` 
+        : `${config.API_BASE_URL}/api/syllabus/images`;
+      const method = editImageId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         body: formData
       });
       if (res.ok) {
         setImageTitle('');
+        setImageContent('');
         setImageFile(null);
+        setImageSubcategory('minor');
+        setEditImageId(null);
         setShowImageModal(false);
         fetchImages();
       } else {
@@ -183,6 +208,15 @@ const SyllabusManagement = () => {
         console.error(err);
       }
     }
+  };
+
+  const handleEditImageClick = (image) => {
+    setImageTitle(image.title || '');
+    setImageContent(image.content || '');
+    setImageSubcategory(image.subcategory || 'minor');
+    setEditImageId(image.id);
+    setImageFile(null);
+    setShowImageModal(true);
   };
 
   const handlePdfUpload = async (e) => {
@@ -226,6 +260,55 @@ const SyllabusManagement = () => {
     }
   };
 
+  const renderVideoCard = (video) => (
+    <div key={video.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
+      <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
+        {video.thumbnail_url ? (
+           <img src={`${config.API_BASE_URL}${video.thumbnail_url}`} alt="Thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+           <video src={`${config.API_BASE_URL}${video.video_url}`} className="w-full h-full object-cover opacity-50"></video>
+        )}
+        <div className="absolute bottom-3 right-3 bg-black/70 rounded-full p-2.5 backdrop-blur-sm">
+           <Play className="w-5 h-5 text-white" />
+        </div>
+      </div>
+      <div className="p-5 flex flex-col flex-1">
+        <h4 className="text-lg font-bold text-white mb-2 leading-tight">{video.title}</h4>
+        <p className="text-sm text-slate-400 line-clamp-2 mb-4 leading-relaxed flex-1">{video.description}</p>
+        <div className="mt-auto flex items-center justify-between border-t border-indigo-900/50 pt-4">
+          <span className="text-sm font-medium text-slate-300">{video.duration || 'N/A'}</span>
+          <div className="flex gap-2">
+            <button onClick={() => handleEditClick(video)} className="p-2 bg-slate-800 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-colors" title="Edit">
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button onClick={() => handleDelete(video.id)} className="p-2 bg-slate-800 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderImageCard = (image) => (
+    <div key={image.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
+      <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
+        <img src={`${config.API_BASE_URL}${image.image_url}`} alt={image.title || "Category image"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+      </div>
+      <div className="p-4 flex flex-col flex-1">
+        <h4 className="text-md font-bold text-white mb-2 leading-tight truncate">{image.title || 'Untitled Image'}</h4>
+        <div className="mt-auto flex items-center justify-end gap-2 border-t border-indigo-900/50 pt-3">
+          <button onClick={() => handleEditImageClick(image)} className="p-2 bg-slate-800 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-colors" title="Edit">
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button onClick={() => handleImageDelete(image.id)} className="p-2 bg-slate-800 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col md:flex-row gap-6 min-h-[70vh]">
       {/* Categories Sidebar */}
@@ -264,7 +347,13 @@ const SyllabusManagement = () => {
                   <FileText className="w-4 h-4" /> Add PDF
                 </button>
                 <button 
-                  onClick={() => setShowImageModal(true)}
+                  onClick={() => {
+                    setImageTitle('');
+                    setImageContent('');
+                    setImageFile(null);
+                    setEditImageId(null);
+                    setShowImageModal(true);
+                  }}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm whitespace-nowrap py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
                 >
                   <ImageIcon className="w-4 h-4" /> Add Images
@@ -296,41 +385,22 @@ const SyllabusManagement = () => {
                   No videos uploaded for this category yet.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {videos.map(video => (
-                    <div key={video.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
-                      {/* Thumbnail */}
-                      <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
-                        {video.thumbnail_url ? (
-                           <img src={`${config.API_BASE_URL}${video.thumbnail_url}`} alt="Thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        ) : (
-                           <video src={`${config.API_BASE_URL}${video.video_url}`} className="w-full h-full object-cover opacity-50"></video>
-                        )}
-                        <div className="absolute bottom-3 right-3 bg-black/70 rounded-full p-2.5 backdrop-blur-sm">
-                           <Play className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="p-5 flex flex-col flex-1">
-                        <h4 className="text-lg font-bold text-white mb-2 leading-tight">{video.title}</h4>
-                        <p className="text-sm text-slate-400 line-clamp-2 mb-4 leading-relaxed flex-1">{video.description}</p>
-                        
-                        <div className="mt-auto flex items-center justify-between border-t border-indigo-900/50 pt-4">
-                          <span className="text-sm font-medium text-slate-300">{video.duration || 'N/A'}</span>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEditClick(video)} className="p-2 bg-slate-800 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-colors" title="Edit">
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDelete(video.id)} className="p-2 bg-slate-800 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                selectedCategory.slug === 'cards-meaning' ? (
+                  <>
+                    <h4 className="text-xl font-bold text-amber-500 mb-4 mt-2">Major Videos</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                      {videos.filter(v => v.subcategory === 'major').map(renderVideoCard)}
                     </div>
-                  ))}
-                </div>
+                    <h4 className="text-xl font-bold text-amber-500 mb-4">Minor Videos</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {videos.filter(v => v.subcategory !== 'major').map(renderVideoCard)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {videos.map(renderVideoCard)}
+                  </div>
+                )
               )}
             </div>
             {/* Images Grid */}
@@ -343,25 +413,22 @@ const SyllabusManagement = () => {
                   No images uploaded for this category yet.
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {images.map(image => (
-                    <div key={image.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
-                      <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
-                        <img src={`${config.API_BASE_URL}${image.image_url}`} alt={image.title || "Category image"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      </div>
-                      
-                      <div className="p-4 flex flex-col flex-1">
-                        <h4 className="text-md font-bold text-white mb-2 leading-tight truncate">{image.title || 'Untitled Image'}</h4>
-                        
-                        <div className="mt-auto flex items-center justify-end border-t border-indigo-900/50 pt-3">
-                          <button onClick={() => handleImageDelete(image.id)} className="p-2 bg-slate-800 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
+                selectedCategory.slug === 'cards-meaning' ? (
+                  <>
+                    <h4 className="text-xl font-bold text-indigo-400 mb-4 mt-2">Major Images</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                      {images.filter(i => i.subcategory === 'major').map(renderImageCard)}
                     </div>
-                  ))}
-                </div>
+                    <h4 className="text-xl font-bold text-indigo-400 mb-4">Minor Images</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                      {images.filter(i => i.subcategory !== 'major').map(renderImageCard)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {images.map(renderImageCard)}
+                  </div>
+                )
               )}
             </div>
 
@@ -428,6 +495,15 @@ const SyllabusManagement = () => {
                       <label className="block text-slate-300 text-sm font-bold mb-1.5">Duration (optional)</label>
                       <input type="text" value={duration} onChange={e => setDuration(e.target.value)} className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors" placeholder="e.g. 15 min" />
                     </div>
+                    {selectedCategory.slug === 'cards-meaning' && (
+                      <div className="col-span-1 md:col-span-2">
+                        <label className="block text-slate-300 text-sm font-bold mb-1.5">Subcategory</label>
+                        <select value={videoSubcategory} onChange={e => setVideoSubcategory(e.target.value)} className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none transition-colors">
+                          <option value="minor">Minor</option>
+                          <option value="major">Major</option>
+                        </select>
+                      </div>
+                    )}
                     
                     <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
                       <div className="border-2 border-dashed border-indigo-900/50 hover:border-amber-500/50 transition-colors rounded-xl p-4 bg-slate-950/50 flex flex-col items-center justify-center text-center group">
@@ -479,19 +555,32 @@ const SyllabusManagement = () => {
                     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                   
-                  <h3 className="text-xl font-bold text-white mb-6 pr-10">Add Image to: <span className="text-indigo-400">{selectedCategory.name}</span></h3>
+                  <h3 className="text-xl font-bold text-white mb-6 pr-10">{editImageId ? 'Edit Image in' : 'Add Image to'}: <span className="text-indigo-400">{selectedCategory.name}</span></h3>
                   
                   <form onSubmit={handleImageUpload} className="grid grid-cols-1 gap-4">
                     <div>
                       <label className="block text-slate-300 text-sm font-bold mb-1.5">Image Title (Optional)</label>
                       <input type="text" value={imageTitle} onChange={e => setImageTitle(e.target.value)} className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors" placeholder="e.g. Card Spread Diagram" />
                     </div>
+                    <div>
+                      <label className="block text-slate-300 text-sm font-bold mb-1.5">Content / Description (Optional)</label>
+                      <textarea value={imageContent} onChange={e => setImageContent(e.target.value)} rows="3" className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors" placeholder="Enter meaning or detailed description for this image..."></textarea>
+                    </div>
+                    {selectedCategory.slug === 'cards-meaning' && (
+                      <div>
+                        <label className="block text-slate-300 text-sm font-bold mb-1.5">Subcategory</label>
+                        <select value={imageSubcategory} onChange={e => setImageSubcategory(e.target.value)} className="w-full bg-slate-950 text-white rounded-xl p-3 border border-indigo-900/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors">
+                          <option value="minor">Minor</option>
+                          <option value="major">Major</option>
+                        </select>
+                      </div>
+                    )}
                     
                     <div className="border-2 border-dashed border-indigo-900/50 hover:border-indigo-500/50 transition-colors rounded-xl p-6 bg-slate-950/50 flex flex-col items-center justify-center text-center group mt-2">
                       <ImageIcon className="w-10 h-10 text-indigo-400 mb-3 group-hover:scale-110 transition-transform" />
                       <label className="cursor-pointer text-indigo-400 hover:text-indigo-300 font-bold text-sm px-4 py-2 bg-indigo-500/10 rounded-lg">
-                        Select Image File *
-                        <input type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files[0])} required />
+                        {editImageId ? 'Update Image File (Optional)' : 'Select Image File *'}
+                        <input type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files[0])} />
                       </label>
                       {imageFile && <span className="text-xs text-slate-400 mt-3 truncate max-w-full px-2 font-mono bg-slate-900 p-1.5 rounded">{imageFile.name}</span>}
                     </div>
@@ -501,7 +590,7 @@ const SyllabusManagement = () => {
                         Cancel
                       </button>
                       <button type="submit" disabled={imageLoading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-8 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:hover:scale-100 hover:-translate-y-1">
-                        {imageLoading ? 'Uploading...' : <><Upload className="w-5 h-5" /> Upload Image</>}
+                        {imageLoading ? 'Uploading...' : <><Upload className="w-5 h-5" /> {editImageId ? 'Update Image' : 'Upload Image'}</>}
                       </button>
                     </div>
                   </form>
