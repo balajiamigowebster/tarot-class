@@ -138,7 +138,7 @@ const SyllabusCategoryPage = () => {
         <img 
           src={`${config.API_BASE_URL}${image.image_url}`} 
           alt={image.title || 'Study image'} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
           <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -167,7 +167,7 @@ const SyllabusCategoryPage = () => {
             <img 
               src={`${config.API_BASE_URL}${image.image_url}`} 
               alt={image.title || 'Study image'} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
