@@ -14,7 +14,7 @@ exports.saveStudent = async (req, res) => {
         }
 
         // 2. Extract Payload
-        const { phone_number, name, order_id, status } = req.body;
+        const { phone_number, name, customer_name, order_id, status } = req.body;
 
         if (!phone_number) {
             return res.status(400).json({
@@ -24,12 +24,13 @@ exports.saveStudent = async (req, res) => {
         }
 
         const studentStatus = status || 'active';
+        const studentName = name || customer_name || null;
 
         // 3. Database Operation (Insert or Update via Sequelize upsert)
         // Upsert returns an array [instance, created]
         const [student, created] = await AllowedStudent.upsert({
             phone_number: phone_number,
-            name: name || null,
+            name: studentName,
             order_id: order_id || null,
             status: studentStatus
         });
