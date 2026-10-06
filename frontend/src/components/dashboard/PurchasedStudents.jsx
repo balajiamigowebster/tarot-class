@@ -20,7 +20,7 @@ const PurchasedStudents = () => {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch(`${config.API_BASE_URL}/api/access/students/all`);
+      const res = await fetch(`${config.API_BASE_URL}/api/check-access/students/all`);
       if (res.ok) {
         const data = await res.json();
         setStudents(data);
@@ -39,8 +39,8 @@ const PurchasedStudents = () => {
     setAddLoading(true);
     try {
       const url = editingStudent 
-        ? `${config.API_BASE_URL}/api/access/students/${editingStudent.id}`
-        : `${config.API_BASE_URL}/api/access/students`;
+        ? `${config.API_BASE_URL}/api/check-access/students/${editingStudent.id}`
+        : `${config.API_BASE_URL}/api/check-access/students`;
       const method = editingStudent ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -77,7 +77,7 @@ const PurchasedStudents = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to remove this student? They will lose access to the course.')) {
       try {
-        const res = await fetch(`${config.API_BASE_URL}/api/access/students/${id}`, {
+        const res = await fetch(`${config.API_BASE_URL}/api/check-access/students/${id}`, {
           method: 'DELETE'
         });
         if (res.ok) {
