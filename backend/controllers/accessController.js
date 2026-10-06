@@ -31,7 +31,7 @@ exports.checkAccess = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await AllowedStudent.findAll({
-      order: [['createdAt', 'DESC']]
+      order: [['id', 'DESC']]
     });
     res.json(students);
   } catch (error) {

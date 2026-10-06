@@ -10,10 +10,12 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const role = localStorage.getItem('role');
+  const studentName = localStorage.getItem('studentName');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('studentName');
     navigate('/');
   };
   
@@ -102,7 +104,7 @@ const Navbar = () => {
                 <User className="w-5 h-5" />
               </div>
               <span className="hidden lg:block text-[15px] font-bold text-[#1D2939]">
-                Profile
+                {role === 'student' && studentName ? studentName : 'Profile'}
               </span>
               <button 
                 onClick={handleLogout}
@@ -166,7 +168,7 @@ const Navbar = () => {
                   <User className="w-5 h-5" />
                 </div>
                 <span className="text-[15px] font-bold text-[#1D2939]">
-                  Profile
+                  {role === 'student' && studentName ? studentName : 'Profile'}
                 </span>
               </div>
               <button 

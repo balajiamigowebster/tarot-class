@@ -41,6 +41,11 @@ const Login = () => {
       });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
+      if (res.data.name) {
+        localStorage.setItem('studentName', res.data.name);
+      } else {
+        localStorage.removeItem('studentName');
+      }
       navigate('/home');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');

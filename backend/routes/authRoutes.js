@@ -76,7 +76,7 @@ router.post('/student-login', async (req, res) => {
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ success: true, token, role: 'student', phone: student.phone_number });
+    res.json({ success: true, token, role: 'student', phone: student.phone_number, name: student.name });
 
   } catch (err) {
     console.error('Student Login Error:', err);
