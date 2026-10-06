@@ -63,6 +63,20 @@ exports.deleteStudent = async (req, res) => {
     res.json({ message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);
-    res.status(500).json({ error: 'Failed to delete student' });
+  }
+};
+
+exports.updateStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { phone_number, name } = req.body;
+    const student = await AllowedStudent.findByPk(id);
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    
+    await student.update({ phone_number, name });
+    res.json(student);
+  } catch (error) {
+    console.error('Error updating student:', error);
+    res.status(500).json({ error: error.message || 'Failed to update student' });
   }
 };

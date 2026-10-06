@@ -5,6 +5,7 @@ const accessController = require('../controllers/accessController');
 router.get('/students/all', accessController.getAllStudents);
 router.post('/students', accessController.addStudent);
 router.delete('/students/:id', accessController.deleteStudent);
+router.put('/students/:id', accessController.updateStudent);
 router.get('/:phone', accessController.checkAccess);
 
 module.exports = router;

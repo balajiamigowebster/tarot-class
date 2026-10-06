@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, Phone, User, Search } from 'lucide-react';
+import { Users, Plus, Trash2, Phone, User, Search, Edit } from 'lucide-react';
 import { config } from '../../config';
 
 const PurchasedStudents = () => {
@@ -12,6 +12,7 @@ const PurchasedStudents = () => {
   const [newPhone, setNewPhone] = useState('');
   const [newName, setNewName] = useState('');
   const [addLoading, setAddLoading] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
 
   useEffect(() => {
     fetchStudents();
@@ -31,14 +32,19 @@ const PurchasedStudents = () => {
     }
   };
 
-  const handleAddStudent = async (e) => {
+  const handleSubmitStudent = async (e) => {
     e.preventDefault();
     if (!newPhone) return alert('Phone number is required');
     
     setAddLoading(true);
     try {
-      const res = await fetch(`${config.API_BASE_URL}/api/access/students`, {
-        method: 'POST',
+      const url = editingStudent 
+        ? `${config.API_BASE_URL}/api/access/students/${editingStudent.id}`
+        : `${config.API_BASE_URL}/api/access/students`;
+      const method = editingStudent ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone_number: newPhone, name: newName })
       });
@@ -47,17 +53,25 @@ const PurchasedStudents = () => {
         setNewPhone('');
         setNewName('');
         setShowAddModal(false);
+        setEditingStudent(null);
         fetchStudents();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to add student');
+        alert(err.error || `Failed to ${editingStudent ? 'update' : 'add'} student`);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to add student');
+      alert(`Failed to ${editingStudent ? 'update' : 'add'} student`);
     } finally {
       setAddLoading(false);
     }
+  };
+
+  const handleEditClick = (student) => {
+    setEditingStudent(student);
+    setNewPhone(student.phone_number);
+    setNewName(student.name || '');
+    setShowAddModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -88,11 +102,19 @@ const PurchasedStudents = () => {
           <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
             <Users className="w-6 h-6 text-amber-500" />
             Purchased Students
+            <span className="bg-amber-500/10 text-amber-500 text-sm py-1 px-3 rounded-full ml-2">
+              {students.length} Total
+            </span>
           </h2>
           <p className="text-slate-400 text-sm">Manage students who have purchased the course</p>
         </div>
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setEditingStudent(null);
+            setNewPhone('');
+            setNewName('');
+            setShowAddModal(true);
+          }}
           className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:-translate-y-1"
         >
           <Plus className="w-5 h-5" /> Add Student
@@ -158,13 +180,22 @@ const PurchasedStudents = () => {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        onClick={() => handleDelete(student.id)}
-                        className="p-2 bg-slate-950 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-indigo-900/30 hover:border-red-500/30"
-                        title="Remove Access"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          onClick={() => handleEditClick(student)}
+                          className="p-2 bg-slate-950 hover:bg-amber-500/20 text-amber-400 rounded-lg transition-colors border border-indigo-900/30 hover:border-amber-500/30"
+                          title="Edit Student"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(student.id)}
+                          className="p-2 bg-slate-950 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-indigo-900/30 hover:border-red-500/30"
+                          title="Remove Access"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -178,9 +209,9 @@ const PurchasedStudents = () => {
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-indigo-900/50 rounded-2xl p-6 shadow-2xl w-full max-w-md relative">
-            <h3 className="text-xl font-bold text-white mb-6 pr-10">Add <span className="text-amber-500">New Student</span></h3>
+            <h3 className="text-xl font-bold text-white mb-6 pr-10">{editingStudent ? 'Edit' : 'Add New'} <span className="text-amber-500">Student</span></h3>
             
-            <form onSubmit={handleAddStudent} className="space-y-4">
+            <form onSubmit={handleSubmitStudent} className="space-y-4">
               <div>
                 <label className="block text-slate-300 text-sm font-bold mb-1.5">Phone Number *</label>
                 <div className="relative">
@@ -227,7 +258,7 @@ const PurchasedStudents = () => {
                   disabled={addLoading} 
                   className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-amber-500/25 disabled:opacity-50"
                 >
-                  {addLoading ? 'Adding...' : 'Add Access'}
+                  {addLoading ? (editingStudent ? 'Updating...' : 'Adding...') : (editingStudent ? 'Update Access' : 'Add Access')}
                 </button>
               </div>
             </form>
