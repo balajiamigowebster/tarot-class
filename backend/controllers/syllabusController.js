@@ -20,7 +20,7 @@ exports.getVideosByCategory = async (req, res) => {
     const { categoryId } = req.params;
     const videos = await SyllabusVideo.findAll({
       where: { category_id: categoryId },
-      order: [['order', 'ASC'], ['createdAt', 'DESC']]
+      order: [['order', 'ASC'], ['createdAt', 'ASC']]
     });
     res.json(videos);
   } catch (error) {
@@ -122,7 +122,7 @@ exports.getImagesByCategory = async (req, res) => {
     const { categoryId } = req.params;
     const images = await SyllabusImage.findAll({
       where: { category_id: categoryId },
-      order: [['order', 'ASC'], ['createdAt', 'DESC']]
+      order: [['order', 'ASC'], ['createdAt', 'ASC']]
     });
     res.json(images);
   } catch (error) {
@@ -209,7 +209,7 @@ exports.getPdfsByCategory = async (req, res) => {
     const { categoryId } = req.params;
     const pdfs = await SyllabusPdf.findAll({
       where: { category_id: categoryId },
-      order: [['order', 'ASC'], ['createdAt', 'DESC']]
+      order: [['order', 'ASC'], ['createdAt', 'ASC']]
     });
     res.json(pdfs);
   } catch (error) {
