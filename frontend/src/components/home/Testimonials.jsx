@@ -7,27 +7,27 @@ const Testimonials = () => {
   const reviews = [
     {
       id: 1,
-      name: "Students",
+      name: "Karthik",
       rating: "5/5",
-      text: `"Sara's pre-recorded classes have transformed my tarot readings!"`,
-      author: "Sarah J., London",
-      avatar: "https://i.pravatar.cc/150?img=1"
+      text: '"Sara\'s pre-recorded classes are incredibly clear. The way she explains complex Tarot concepts is amazing. It really helped me start my journey."',
+      author: "Karthik N., Chennai",
+      avatar: "https://i.pravatar.cc/150?img=11"
     },
     {
       id: 2,
-      name: "Students",
+      name: "Priya",
       rating: "5/5",
-      text: `"Clear, insightful, and empowering."`,
-      author: "Sarah J., London",
+      text: '"Very insightful and empowering sessions. I felt a strong connection and her guidance has been life-changing. Highly recommend her tarot classes."',
+      author: "Priya S., Coimbatore",
       avatar: "https://i.pravatar.cc/150?img=5"
     },
     {
       id: 3,
-      name: "Students",
+      name: "Divya",
       rating: "5/5",
-      text: `"Sara's pre-recorded classes have transformed my."`,
-      author: "Sarah J., London",
-      avatar: "https://i.pravatar.cc/150?img=11"
+      text: '"The classes are so well structured. Sara\'s teaching style is very practical. It has transformed how I do my tarot readings completely!"',
+      author: "Divya R., Madurai",
+      avatar: "https://i.pravatar.cc/150?img=9"
     }
   ];
 
