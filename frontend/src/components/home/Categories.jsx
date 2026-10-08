@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { config } from '../../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const getIcon = (idx) => {
   const icons = [
@@ -146,19 +148,19 @@ const Categories = () => {
                       onClick={() => setPlayingVideo(video)}
                     >
                       {video.thumbnail_url ? (
-                        <img 
+                        <LazyLoad once><img 
                           src={`${config.API_BASE_URL}${video.thumbnail_url}`} 
                           alt={video.title} 
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        />
+                        /></LazyLoad>
                       ) : (
-                        <video 
+                        <LazyLoad once><video 
                           src={`${config.API_BASE_URL}${video.video_url}#t=0.1`} 
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
                           preload="metadata"
                           muted
                           playsInline
-                        />
+                        /></LazyLoad>
                       )}
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="bg-black/70 rounded-full p-4 shadow-xl backdrop-blur-sm group-hover:bg-black group-hover:scale-110 transition-all border border-white/10">
@@ -220,7 +222,7 @@ const Categories = () => {
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             <div className="aspect-video w-full bg-black flex items-center justify-center">
-              <video 
+              <LazyLoad once><video 
                 src={`${config.API_BASE_URL}${playingVideo.video_url}`} 
                 controls 
                 autoPlay 
@@ -228,7 +230,7 @@ const Categories = () => {
                 controlsList="nodownload"
               >
                 Your browser does not support the video tag.
-              </video>
+              </video></LazyLoad>
             </div>
           </div>
         </div>

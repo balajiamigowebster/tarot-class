@@ -4,6 +4,8 @@ import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
 import { config } from '../../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
@@ -132,11 +134,11 @@ const Hero = () => {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center relative z-10 lg:min-h-[50vh]">
           {/* Left Side: Syllabus Graphic Image */}
           <div className="flex-1 w-full max-w-2xl mx-auto flex justify-center" data-aos="fade-right">
-            <img 
+            <LazyLoad once><img 
               src="/images/hero-1.webp" 
               alt="Tarot Card Reading Class Syllabus" 
               className="w-full max-w-lg object-contain drop-shadow-xl" 
-            />
+            /></LazyLoad>
           </div>
 
           {/* Right Side: Text & CTA */}
@@ -164,11 +166,11 @@ const Hero = () => {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 md:p-8 cursor-pointer backdrop-blur-sm"
           onClick={() => setIsZoomed(false)}
         >
-          <img 
+          <LazyLoad once><img 
             src="/images/live.png" 
             alt="Sara Tarot Card Reader Live Class Full" 
             className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
-          />
+          /></LazyLoad>
         </div>
       )}
     </section>

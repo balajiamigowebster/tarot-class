@@ -3,6 +3,8 @@ import { ArrowRight } from 'lucide-react';
 import { useContent } from '../../hooks/useContent';
 import { Link } from 'react-router-dom';
 import VideoModal from '../VideoModal';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const PreRecordedCourses = () => {
   const { videos, loading } = useContent();
@@ -38,12 +40,12 @@ const PreRecordedCourses = () => {
                   className="aspect-[16/10] relative overflow-hidden bg-black flex items-center justify-center group cursor-pointer"
                   onClick={() => setSelectedVideo(course)}
                 >
-                  <video 
+                  <LazyLoad once><video 
                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     preload="metadata"
                     src={course.video_url || course.url}
                   >
-                  </video>
+                  </video></LazyLoad>
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:bg-[#c19b52] transition-colors">
                       <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[12px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>

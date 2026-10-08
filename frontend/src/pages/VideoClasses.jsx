@@ -3,6 +3,8 @@ import Navbar from '../components/Navbar';
 import { ArrowRight } from 'lucide-react';
 import { useContent } from '../hooks/useContent';
 import VideoModal from '../components/VideoModal';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const VideoClasses = () => {
   const { videos, loading } = useContent();
@@ -42,13 +44,13 @@ const VideoClasses = () => {
                       className="aspect-video relative overflow-hidden bg-black cursor-pointer group flex items-center justify-center"
                       onClick={() => setSelectedVideo(course)}
                     >
-                      <video 
+                      <LazyLoad once><video 
                         preload="metadata"
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         src={course.video_url || course.url}
                       >
                         Your browser does not support the video tag.
-                      </video>
+                      </video></LazyLoad>
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-14 h-14 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:bg-[#c19b52] group-hover:scale-110 transition-all duration-300">
                           <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[16px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>

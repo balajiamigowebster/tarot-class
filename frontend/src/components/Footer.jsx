@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { config } from '../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const Footer = () => {
   const [syllabusCategories, setSyllabusCategories] = useState([]);
@@ -29,11 +31,11 @@ const Footer = () => {
           {/* Logo & Brand */}
           <div className="flex flex-col items-center lg:items-start lg:col-span-4">
             <Link to="/home" className="inline-block mb-6">
-              <img 
+              <LazyLoad once><img 
                 src="/images/website-logo-main.webp" 
                 alt="Sara Tarot" 
                 className="h-24 md:h-28 w-auto object-contain rounded-2xl shadow-lg" 
-              />
+              /></LazyLoad>
             </Link>
             <p className="text-[#B89355] font-serif text-lg italic text-center lg:text-left mb-2">
               Unlock the Secrets of the Universe

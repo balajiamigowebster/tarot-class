@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import SyllabusManagement from '../../components/dashboard/SyllabusManagement';
 import LiveClassManager from '../../components/dashboard/LiveClassManager';
 import PurchasedStudents from '../../components/dashboard/PurchasedStudents';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const Dashboard = () => {
   const { videos, pdfs, loading } = useContent();
@@ -68,7 +70,7 @@ const Dashboard = () => {
           <div className="flex-1 bg-black p-0 relative group">
             {activeVideo ? (
               <div className="aspect-video relative">
-                <video 
+                <LazyLoad once><video 
                   key={activeVideo.id}
                   controls 
                   controlsList="nodownload"
@@ -78,7 +80,7 @@ const Dashboard = () => {
                   src={activeVideo.video_url || activeVideo.url}
                 >
                   Your browser does not support the video tag.
-                </video>
+                </video></LazyLoad>
               </div>
             ) : (
               <div className="aspect-video bg-slate-900 flex items-center justify-center">

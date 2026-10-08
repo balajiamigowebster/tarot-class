@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const Testimonials = () => {
   const reviews = [
@@ -43,7 +45,7 @@ const Testimonials = () => {
             {reviews.map((review) => (
               <div key={review.id} className="bg-white rounded-2xl p-6 shadow-md border border-slate-100 flex flex-col h-full">
                 <div className="flex items-center gap-4 mb-4">
-                  <img src={review.avatar} alt="Student" className="w-12 h-12 rounded-full object-cover" />
+                  <LazyLoad once><img src={review.avatar} alt="Student" className="w-12 h-12 rounded-full object-cover" /></LazyLoad>
                   <div>
                     <h4 className="font-bold text-[#1D2939]">{review.name}</h4>
                     <p className="text-sm font-semibold text-slate-500">{review.rating}</p>
@@ -75,11 +77,11 @@ const Testimonials = () => {
         <div className="mb-10 mt-16 max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12 mx-auto">
             <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
-              <img 
+              <LazyLoad once><img 
                 src="/images/tarot-class.webp" 
                 alt="Sara Tarot Reader" 
                 className="w-56 h-72 md:w-72 md:h-96 rounded-2xl object-cover shadow-lg object-top"
-              />
+              /></LazyLoad>
             </div>
             
             <div className="flex-1 text-center md:text-left pt-4">

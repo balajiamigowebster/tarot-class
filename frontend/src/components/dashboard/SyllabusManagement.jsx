@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Trash2, Edit2, Play, Image as ImageIcon, Video, FileText } from 'lucide-react';
 import { config } from '../../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const SyllabusManagement = () => {
   const [categories, setCategories] = useState([]);
@@ -264,9 +266,9 @@ const SyllabusManagement = () => {
     <div key={video.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
       <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
         {video.thumbnail_url ? (
-           <img src={`${config.API_BASE_URL}${video.thumbnail_url}`} alt="Thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+           <LazyLoad once><img src={`${config.API_BASE_URL}${video.thumbnail_url}`} alt="Thumbnail" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></LazyLoad>
         ) : (
-           <video src={`${config.API_BASE_URL}${video.video_url}`} className="w-full h-full object-cover opacity-50"></video>
+           <LazyLoad once><video src={`${config.API_BASE_URL}${video.video_url}`} className="w-full h-full object-cover opacity-50"></video></LazyLoad>
         )}
         <div className="absolute bottom-3 right-3 bg-black/70 rounded-full p-2.5 backdrop-blur-sm">
            <Play className="w-5 h-5 text-white" />
@@ -293,7 +295,7 @@ const SyllabusManagement = () => {
   const renderImageCard = (image) => (
     <div key={image.id} className="bg-slate-950 border border-indigo-900/50 rounded-2xl overflow-hidden flex flex-col group hover:border-indigo-500/50 transition-colors shadow-lg">
       <div className="relative h-48 bg-black flex-shrink-0 w-full overflow-hidden">
-        <img src={`${config.API_BASE_URL}${image.image_url}`} alt={image.title || "Category image"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        <LazyLoad once><img src={`${config.API_BASE_URL}${image.image_url}`} alt={image.title || "Category image"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></LazyLoad>
       </div>
       <div className="p-4 flex flex-col flex-1">
         <h4 className="text-md font-bold text-white mb-2 leading-tight truncate">{image.title || 'Untitled Image'}</h4>

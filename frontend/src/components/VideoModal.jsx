@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const VideoModal = ({ isOpen, onClose, video }) => {
   useEffect(() => {
@@ -57,14 +59,14 @@ const VideoModal = ({ isOpen, onClose, video }) => {
 
             {/* Video Player */}
             <div className="aspect-video w-full bg-slate-950">
-              <video
+              <LazyLoad once><video
                 src={video.video_url || video.url}
                 controls
                 autoPlay
                 className="w-full h-full object-contain"
               >
                 Your browser does not support the video tag.
-              </video>
+              </video></LazyLoad>
             </div>
             
             {/* Optional glow effect behind modal */}

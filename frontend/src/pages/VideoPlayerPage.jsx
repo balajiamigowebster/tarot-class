@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { config } from '../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const VideoPlayerPage = () => {
   const { slug, videoId } = useParams();
@@ -78,7 +80,7 @@ const VideoPlayerPage = () => {
           {currentVideo ? (
             <>
               <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border border-slate-200">
-                <video 
+                <LazyLoad once><video 
                   key={currentVideo.id} // Forces video reload when switching
                   src={`${config.API_BASE_URL}${currentVideo.video_url}`} 
                   controls 
@@ -87,7 +89,7 @@ const VideoPlayerPage = () => {
                   controlsList="nodownload"
                 >
                   Your browser does not support the video tag.
-                </video>
+                </video></LazyLoad>
               </div>
               <div className="mt-6 p-1">
                 <h1 className="text-2xl md:text-3xl font-bold text-[#0C3229] mb-3">{currentVideo.title}</h1>
@@ -124,17 +126,17 @@ const VideoPlayerPage = () => {
                   {/* Thumbnail */}
                   <div className="w-40 min-w-[160px] h-24 bg-black rounded-lg overflow-hidden relative border border-slate-200 flex-shrink-0">
                     {video.thumbnail_url ? (
-                      <img 
+                      <LazyLoad once><img 
                         src={`${config.API_BASE_URL}${video.thumbnail_url}`} 
                         alt={video.title} 
                         className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
-                      />
+                      /></LazyLoad>
                     ) : (
-                      <video 
+                      <LazyLoad once><video 
                         src={`${config.API_BASE_URL}${video.video_url}#t=0.1`} 
                         className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
                         preload="metadata"
-                      />
+                      /></LazyLoad>
                     )}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { config } from '../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const Navbar = () => {
   const location = useLocation();
@@ -53,11 +55,11 @@ const Navbar = () => {
           
           {/* Logo */}
           <Link to="/home" className="flex flex-col items-center justify-center">
-            <img 
+            <LazyLoad once><img 
               src="/images/website-logo-main.webp" 
               alt="Sara Tarot" 
               className="h-12 md:h-14 w-auto object-contain rounded-xl shadow-sm" 
-            />
+            /></LazyLoad>
           </Link>
 
           {/* Nav Links */}

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { config } from '../config';
+import _ReactLazyLoad from 'react-lazyload';
+const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const SyllabusCategoryPage = () => {
   const { slug } = useParams();
@@ -83,19 +85,19 @@ const SyllabusCategoryPage = () => {
         className="relative bg-black h-48 flex items-center justify-center cursor-pointer group overflow-hidden block"
       >
         {video.thumbnail_url ? (
-          <img 
+          <LazyLoad once><img 
             src={`${config.API_BASE_URL}${video.thumbnail_url}`} 
             alt={video.title} 
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" 
-          />
+          /></LazyLoad>
         ) : (
-          <video 
+          <LazyLoad once><video 
             src={`${config.API_BASE_URL}${video.video_url}#t=0.1`} 
             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
             preload="metadata"
             muted
             playsInline
-          />
+          /></LazyLoad>
         )}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="bg-black/70 rounded-full p-4 shadow-xl backdrop-blur-sm group-hover:bg-[#B89355] group-hover:scale-110 transition-all border border-white/10">
@@ -135,11 +137,11 @@ const SyllabusCategoryPage = () => {
       onClick={() => setSelectedImage(image)}
     >
       <div className="relative h-48 bg-slate-100 w-full" onContextMenu={(e) => e.preventDefault()}>
-        <img 
+        <LazyLoad once><img 
           src={`${config.API_BASE_URL}${image.image_url}`} 
           alt={image.title || 'Study image'} 
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
-        />
+        /></LazyLoad>
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
           <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -164,11 +166,11 @@ const SyllabusCategoryPage = () => {
             onClick={() => setSelectedImage(image)}
             onContextMenu={(e) => e.preventDefault()}
           >
-            <img 
+            <LazyLoad once><img 
               src={`${config.API_BASE_URL}${image.image_url}`} 
               alt={image.title || 'Study image'} 
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
-            />
+            /></LazyLoad>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -380,11 +382,11 @@ const SyllabusCategoryPage = () => {
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             <div className="p-2 overflow-auto flex-1 w-full flex items-center justify-center bg-zinc-900" onContextMenu={(e) => e.preventDefault()}>
-              <img 
+              <LazyLoad once><img 
                 src={`${config.API_BASE_URL}${selectedImage.image_url}`} 
                 alt={selectedImage.title || 'Study image'} 
                 className="max-w-full max-h-[75vh] object-contain rounded select-none pointer-events-none"
-              />
+              /></LazyLoad>
             </div>
             <div className="w-full p-4 bg-black border-t border-white/10 flex justify-between items-center">
               <h3 className="text-white font-bold">{selectedImage.title || 'Study Image'}</h3>
