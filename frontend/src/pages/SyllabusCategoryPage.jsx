@@ -13,7 +13,8 @@ const SyllabusCategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [activeView, setActiveView] = useState(null);
+  const queryParams = new URLSearchParams(window.location.search);
+  const [activeView, setActiveView] = useState(queryParams.get('view') || null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -232,7 +233,7 @@ const SyllabusCategoryPage = () => {
                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-[#E8DCC4]">
                         <svg className="w-8 h-8 text-[#0C3229]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                      </div>
-                     <h3 className="text-2xl font-bold text-[#0C3229] font-serif mb-3">Minor Images</h3>
+                     <h3 className="text-2xl font-bold text-[#0C3229] font-serif mb-3">Minor Arcana Images</h3>
                      <p className="text-[#4A645D] text-sm mb-8 leading-relaxed">Explore the meaning of minor arcana cards through visual representations.</p>
                      <button onClick={() => setActiveView('minor-images')} className="mt-auto bg-[#EAD4AB] hover:bg-[#D9BE8E] text-[#0C3229] font-bold py-2.5 px-6 rounded-full transition-colors flex items-center gap-2 cursor-pointer">View Images &rarr;</button>
                   </div>
@@ -244,7 +245,7 @@ const SyllabusCategoryPage = () => {
                      <div className="w-16 h-16 bg-[#081F19] rounded-full flex items-center justify-center mb-6 shadow-inner border border-[#B89355]/30">
                         <svg className="w-8 h-8 text-[#EAD4AB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                      </div>
-                     <h3 className="text-2xl font-bold text-white font-serif mb-3 relative z-10">Major Images</h3>
+                     <h3 className="text-2xl font-bold text-white font-serif mb-3 relative z-10">Major Arcana Images</h3>
                      <p className="text-[#A3B8B2] text-sm mb-8 leading-relaxed relative z-10">Explore the meaning of major arcana cards through visual representations.</p>
                      <button onClick={() => setActiveView('major-images')} className="mt-auto bg-[#EAD4AB] hover:bg-[#D9BE8E] text-[#0C3229] font-bold py-2.5 px-6 rounded-full transition-colors flex items-center gap-2 relative z-10 cursor-pointer">View Images &rarr;</button>
                   </div>
@@ -269,7 +270,7 @@ const SyllabusCategoryPage = () => {
                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-[#E8DCC4]">
                         <svg className="w-8 h-8 text-[#0C3229]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path></svg>
                      </div>
-                     <h3 className="text-2xl font-bold text-[#0C3229] font-serif mb-3">Minor Videos</h3>
+                     <h3 className="text-2xl font-bold text-[#0C3229] font-serif mb-3">Minor Arcana Videos</h3>
                      <p className="text-[#4A645D] text-sm mb-8 leading-relaxed">Watch detailed video explanations for minor arcana cards.</p>
                      <button onClick={() => setActiveView('minor-videos')} className="mt-auto bg-[#EAD4AB] hover:bg-[#D9BE8E] text-[#0C3229] font-bold py-2.5 px-6 rounded-full transition-colors flex items-center gap-2 cursor-pointer">Watch Videos &rarr;</button>
                   </div>
@@ -281,7 +282,7 @@ const SyllabusCategoryPage = () => {
                      <div className="w-16 h-16 bg-[#081F19] rounded-full flex items-center justify-center mb-6 shadow-inner border border-[#B89355]/30">
                         <svg className="w-8 h-8 text-[#EAD4AB]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
                      </div>
-                     <h3 className="text-2xl font-bold text-white font-serif mb-3 relative z-10">Major Videos</h3>
+                     <h3 className="text-2xl font-bold text-white font-serif mb-3 relative z-10">Major Arcana Videos</h3>
                      <p className="text-[#A3B8B2] text-sm mb-8 leading-relaxed relative z-10">Watch detailed video explanations for major arcana cards.</p>
                      <button onClick={() => setActiveView('major-videos')} className="mt-auto bg-[#EAD4AB] hover:bg-[#D9BE8E] text-[#0C3229] font-bold py-2.5 px-6 rounded-full transition-colors flex items-center gap-2 relative z-10 cursor-pointer">Watch Videos &rarr;</button>
                   </div>
@@ -296,7 +297,7 @@ const SyllabusCategoryPage = () => {
                </button>
                {activeView === 'minor-images' && (
                  <>
-                   <h3 className="text-3xl font-bold text-[#0C3229] mb-2 font-serif border-b pb-4">Minor Images</h3>
+                   <h3 className="text-3xl font-bold text-[#0C3229] mb-2 font-serif border-b pb-4">Minor Arcana Images</h3>
                    <div className="flex flex-col">
                      {images.filter(i => i.subcategory !== 'major').map(renderImageWithContentCard)}
                      {images.filter(i => i.subcategory !== 'major').length === 0 && <p className="text-slate-500 mt-6">No minor images uploaded yet.</p>}
@@ -305,7 +306,7 @@ const SyllabusCategoryPage = () => {
                )}
                {activeView === 'major-images' && (
                  <>
-                   <h3 className="text-3xl font-bold text-[#0C3229] mb-2 font-serif border-b pb-4">Major Images</h3>
+                   <h3 className="text-3xl font-bold text-[#0C3229] mb-2 font-serif border-b pb-4">Major Arcana Images</h3>
                    <div className="flex flex-col">
                      {images.filter(i => i.subcategory === 'major').map(renderImageWithContentCard)}
                      {images.filter(i => i.subcategory === 'major').length === 0 && <p className="text-slate-500 mt-6">No major images uploaded yet.</p>}
@@ -314,7 +315,7 @@ const SyllabusCategoryPage = () => {
                )}
                {activeView === 'minor-videos' && (
                  <>
-                   <h3 className="text-3xl font-bold text-[#0C3229] mb-6 font-serif border-b pb-4">Minor Videos</h3>
+                   <h3 className="text-3xl font-bold text-[#0C3229] mb-6 font-serif border-b pb-4">Minor Arcana Videos</h3>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                      {videos.filter(v => v.subcategory !== 'major').map(renderVideoCard)}
                      {videos.filter(v => v.subcategory !== 'major').length === 0 && <p className="text-slate-500">No minor videos uploaded yet.</p>}
@@ -323,7 +324,7 @@ const SyllabusCategoryPage = () => {
                )}
                {activeView === 'major-videos' && (
                  <>
-                   <h3 className="text-3xl font-bold text-[#0C3229] mb-6 font-serif border-b pb-4">Major Videos</h3>
+                   <h3 className="text-3xl font-bold text-[#0C3229] mb-6 font-serif border-b pb-4">Major Arcana Videos</h3>
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                      {videos.filter(v => v.subcategory === 'major').map(renderVideoCard)}
                      {videos.filter(v => v.subcategory === 'major').length === 0 && <p className="text-slate-500">No major videos uploaded yet.</p>}
