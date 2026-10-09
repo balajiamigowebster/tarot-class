@@ -135,7 +135,7 @@ const Hero = () => {
           {/* Left Side: Syllabus Graphic Image */}
           <div className="flex-1 w-full max-w-2xl mx-auto flex justify-center" data-aos="fade-right">
             <LazyLoad once><img 
-              src="/images/hero-1.webp" 
+              src="/images/hero-2.png" 
               alt="Tarot Card Reading Class Syllabus" 
               className="w-full max-w-lg object-contain drop-shadow-xl" 
             /></LazyLoad>
