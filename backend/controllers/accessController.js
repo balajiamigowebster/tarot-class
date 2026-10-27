@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const AllowedStudent = require('../models/AllowedStudent');
 
 exports.checkAccess = async (req, res) => {
@@ -8,8 +9,21 @@ exports.checkAccess = async (req, res) => {
   }
 
   try {
+    const rawPhone = String(phone).trim();
+    const digitsOnly = rawPhone.replace(/\D/g, '');
+    const tenDigits = digitsOnly.slice(-10);
+    const possibleNumbers = Array.from(new Set([
+      rawPhone,
+      digitsOnly,
+      tenDigits,
+      `+91${tenDigits}`,
+      `91${tenDigits}`
+    ])).filter(Boolean);
+
     const student = await AllowedStudent.findOne({
-      where: { phone_number: phone }
+      where: {
+        phone_number: { [Op.in]: possibleNumbers }
+      }
     });
 
     if (!student) {

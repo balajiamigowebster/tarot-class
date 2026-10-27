@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../../hooks/useContent';
 import Navigation from '../../components/Navigation';
+import CustomVideoPlayer from '../../components/CustomVideoPlayer';
 import PdfModal from '../../components/PdfModal';
 import { Play, PlayCircle, FileText, Download, Eye, Clock, BookOpen, LayoutDashboard, Video, FileEdit, Globe, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -70,17 +71,13 @@ const Dashboard = () => {
           <div className="flex-1 bg-black p-0 relative group">
             {activeVideo ? (
               <div className="aspect-video relative">
-                <LazyLoad once><video 
+                <CustomVideoPlayer 
                   key={activeVideo.id}
-                  controls 
-                  controlsList="nodownload"
-                  onContextMenu={(e) => e.preventDefault()}
-                  className="w-full h-full object-contain bg-black"
-                  preload="metadata"
                   src={activeVideo.video_url || activeVideo.url}
-                >
-                  Your browser does not support the video tag.
-                </video></LazyLoad>
+                  title={activeVideo.title}
+                  poster={activeVideo.thumbnail_url}
+                  autoPlay={false}
+                />
               </div>
             ) : (
               <div className="aspect-video bg-slate-900 flex items-center justify-center">

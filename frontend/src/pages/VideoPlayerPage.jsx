@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { config } from '../config';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import _ReactLazyLoad from 'react-lazyload';
 const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
@@ -80,16 +81,13 @@ const VideoPlayerPage = () => {
           {currentVideo ? (
             <>
               <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border border-slate-200">
-                <LazyLoad once><video 
-                  key={currentVideo.id} // Forces video reload when switching
-                  src={`${config.API_BASE_URL}${currentVideo.video_url}`} 
-                  controls 
-                  autoPlay 
-                  className="w-full h-full"
-                  controlsList="nodownload"
-                >
-                  Your browser does not support the video tag.
-                </video></LazyLoad>
+                <CustomVideoPlayer 
+                  key={currentVideo.id}
+                  src={currentVideo.video_url?.startsWith('http') ? currentVideo.video_url : `${config.API_BASE_URL}${currentVideo.video_url}`}
+                  poster={currentVideo.thumbnail_url ? (currentVideo.thumbnail_url.startsWith('http') ? currentVideo.thumbnail_url : `${config.API_BASE_URL}${currentVideo.thumbnail_url}`) : undefined}
+                  title={currentVideo.title}
+                  autoPlay={false}
+                />
               </div>
               <div className="mt-6 p-1">
                 <h1 className="text-2xl md:text-3xl font-bold text-[#0C3229] mb-3">{currentVideo.title}</h1>

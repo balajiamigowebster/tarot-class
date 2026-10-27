@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { config } from '../../config';
+import CustomVideoPlayer from '../CustomVideoPlayer';
 import _ReactLazyLoad from 'react-lazyload';
 const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
@@ -250,15 +251,11 @@ const Categories = () => {
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             <div className="aspect-video w-full bg-black flex items-center justify-center">
-              <LazyLoad once><video 
-                src={`${config.API_BASE_URL}${playingVideo.video_url}`} 
-                controls 
-                autoPlay 
-                className="w-full h-full"
-                controlsList="nodownload"
-              >
-                Your browser does not support the video tag.
-              </video></LazyLoad>
+              <CustomVideoPlayer 
+                src={`${config.API_BASE_URL}${playingVideo.video_url}`}
+                title={playingVideo.title}
+                autoPlay={false}
+              />
             </div>
           </div>
         </div>

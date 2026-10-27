@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const { Op } = require('sequelize');
 const AllowedStudent = require('../models/AllowedStudent');
 
 // In-memory store for OTPs (in production, use Redis or DB)
@@ -60,8 +61,25 @@ router.post('/student-login', async (req, res) => {
       return res.status(400).json({ message: 'Phone number is required' });
     }
 
+    const rawPhone = String(phone_number || '').trim();
+    const digitsOnly = rawPhone.replace(/\D/g, '');
+    const tenDigits = digitsOnly.slice(-10);
+
+    const possibleNumbers = Array.from(new Set([
+      rawPhone,
+      digitsOnly,
+      tenDigits,
+      `+91${tenDigits}`,
+      `91${tenDigits}`
+    ])).filter(Boolean);
+
     // Check if the student is in the allowed_students table and active
-    const student = await AllowedStudent.findOne({ where: { phone_number, status: 'active' } });
+    const student = await AllowedStudent.findOne({ 
+      where: { 
+        phone_number: { [Op.in]: possibleNumbers }, 
+        status: 'active' 
+      } 
+    });
     
     if (!student) {
       return res.status(403).json({ message: 'No access to this website. You have not purchased the class.' });

@@ -33,11 +33,18 @@ const Login = () => {
   // --- Student API Handlers ---
   const handleStudentLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number without spaces.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const res = await axios.post(`${config.API_BASE_URL}/api/auth/student-login`, { 
-        phone_number: phoneNumber
+        phone_number: cleanPhone
       });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
@@ -101,16 +108,41 @@ const Login = () => {
             <form className="mt-8 space-y-6" onSubmit={handleStudentLogin}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="appearance-none block w-full px-4 py-3 border border-indigo-900/50 rounded-xl bg-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
-                    placeholder="+919876543210"
-                  />
-                  <p className="mt-2 text-xs text-slate-500">Enter the phone number used during class purchase.</p>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-300">
+                      Phone Number <span className="text-amber-500">*</span>
+                    </label>
+                    {phoneNumber.length > 0 && (
+                      <span className={`text-xs ${phoneNumber.length === 10 ? 'text-emerald-400 font-medium' : 'text-slate-400'}`}>
+                        {phoneNumber.length}/10 digits
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Phone input with UI-only +91 prefix badge (like image 2) */}
+                  <div className="flex items-center rounded-xl bg-slate-800 border border-indigo-900/50 focus-within:ring-2 focus-within:ring-amber-500 focus-within:border-amber-500 transition-all overflow-hidden shadow-inner">
+                    <div className="flex items-center justify-center px-4 py-3 bg-slate-800/90 text-slate-300 font-semibold text-sm sm:text-base border-r border-indigo-900/50 select-none">
+                      +91
+                    </div>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      required
+                      maxLength={10}
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        // Strictly digits only (0-9), strictly no spaces, max 10 digits
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhoneNumber(cleaned);
+                      }}
+                      className="w-full bg-transparent px-4 py-3 text-white placeholder-slate-500 focus:outline-none text-sm sm:text-base tracking-wider"
+                      placeholder="Enter 10-digit number (no spaces)"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Enter the 10-digit mobile number without spaces used during class purchase.
+                  </p>
                 </div>
               </div>
               <button
