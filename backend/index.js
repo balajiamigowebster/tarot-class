@@ -11,6 +11,7 @@ const SyllabusVideo = require('./models/SyllabusVideo');
 const SyllabusImage = require('./models/SyllabusImage');
 const SyllabusPdf = require('./models/SyllabusPdf');
 const LiveClass = require('./models/LiveClass');
+const LiveClassRecording = require('./models/LiveClassRecording');
 const LiveClassRegistration = require('./models/LiveClassRegistration');
 const AllowedStudent = require('./models/AllowedStudent');
 

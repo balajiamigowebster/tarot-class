@@ -9,10 +9,12 @@ import SyllabusCategoryPage from './pages/SyllabusCategoryPage';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import LiveClassManager from './components/dashboard/LiveClassManager';
 import LiveClassRoom from './pages/LiveClassRoom';
+import LiveClassRecorded from './pages/LiveClassRecorded';
 import Login from './pages/Login';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -21,7 +23,6 @@ const ProtectedRoute = ({ children }) => {
   }
   return children;
 };
-import 'aos/dist/aos.css';
 
 function App() {
   useEffect(() => {
@@ -44,6 +45,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/admin/live-classes" element={<ProtectedRoute><LiveClassManager /></ProtectedRoute>} />
           <Route path="/live-class/:id" element={<ProtectedRoute><LiveClassRoom /></ProtectedRoute>} />
+          <Route path="/live-recordings" element={<ProtectedRoute><LiveClassRecorded /></ProtectedRoute>} />
           <Route path="/syllabus/:slug" element={<ProtectedRoute><SyllabusCategoryPage /></ProtectedRoute>} />
           <Route path="/syllabus/:slug/video/:videoId" element={<ProtectedRoute><VideoPlayerPage /></ProtectedRoute>} />
         </Routes>

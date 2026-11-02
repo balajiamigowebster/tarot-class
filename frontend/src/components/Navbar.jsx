@@ -41,7 +41,8 @@ const Navbar = () => {
         name: cat.name,
         path: `/syllabus/${cat.slug}`
       }))
-    }
+    },
+    { name: 'Live Class Recorded', path: '/live-recordings' }
   ];
 
   if (role === 'admin' || role === 'host') {
@@ -69,7 +70,10 @@ const Navbar = () => {
                 <Link 
                   to={link.path}
                   className={`px-5 py-2.5 rounded-full transition-all duration-300 flex items-center gap-1.5 font-semibold text-[15px] border border-transparent ${
-                    location.pathname === link.path || (link.name === 'Home' && location.pathname === '/home') || (link.name === 'Syllabus' && location.pathname.includes('/syllabus'))
+                    location.pathname === link.path || 
+                    (link.name === 'Home' && location.pathname === '/home') || 
+                    (link.name === 'Syllabus' && location.pathname.includes('/syllabus')) ||
+                    (link.name === 'Live Class Recorded' && location.pathname.includes('/live-recordings'))
                       ? 'bg-gradient-to-r from-[#B89355] to-[#c19b52] text-white shadow-md shadow-[#B89355]/30 border-[#B89355]/20' 
                       : 'text-[#1D2939] hover:bg-[#B89355]/10 hover:text-[#0F3C34]'
                   }`}
@@ -138,7 +142,9 @@ const Navbar = () => {
                   to={link.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-3 py-3 rounded-md text-base font-bold ${
-                    location.pathname === link.path || (link.name === 'Home' && location.pathname === '/home')
+                    location.pathname === link.path || 
+                    (link.name === 'Home' && location.pathname === '/home') ||
+                    (link.name === 'Live Class Recorded' && location.pathname.includes('/live-recordings'))
                       ? 'bg-[#0F3C34]/10 text-[#0F3C34]' 
                       : 'text-[#1D2939] hover:bg-slate-50'
                   }`}

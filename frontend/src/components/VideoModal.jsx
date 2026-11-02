@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import CustomVideoPlayer from './CustomVideoPlayer';
-import _ReactLazyLoad from 'react-lazyload';
-const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
+import { config } from '../config';
 
 const VideoModal = ({ isOpen, onClose, video }) => {
   useEffect(() => {
@@ -18,6 +17,12 @@ const VideoModal = ({ isOpen, onClose, video }) => {
   }, [isOpen]);
 
   if (!video) return null;
+
+  const rawSrc = video.video_url || video.url || video.videoUrl;
+  const resolvedSrc = rawSrc?.startsWith('http') ? rawSrc : (rawSrc ? `${config.API_BASE_URL}${rawSrc.startsWith('/') ? '' : '/'}${rawSrc}` : '');
+  
+  const rawPoster = video.thumbnail_url || video.thumbnailUrl;
+  const resolvedPoster = rawPoster?.startsWith('http') ? rawPoster : (rawPoster ? `${config.API_BASE_URL}${rawPoster.startsWith('/') ? '' : '/'}${rawPoster}` : undefined);
 
   return (
     <AnimatePresence>
@@ -61,9 +66,9 @@ const VideoModal = ({ isOpen, onClose, video }) => {
             {/* Video Player */}
             <div className="aspect-video w-full bg-slate-950">
               <CustomVideoPlayer
-                src={video.video_url || video.url}
+                src={resolvedSrc}
                 title={video.title}
-                poster={video.thumbnail_url}
+                poster={resolvedPoster}
                 autoPlay={false}
               />
             </div>

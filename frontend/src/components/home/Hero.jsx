@@ -17,8 +17,9 @@ const Hero = () => {
       try {
         const res = await axios.get(`${config.API_BASE_URL}/api/live-classes`);
         if (res.data && res.data.length > 0) {
-          // Assuming the backend returns them in order, or we can just take the last one
-          setLatestClass(res.data[res.data.length - 1]);
+          // Find the latest active class, otherwise fall back to first item
+          const activeClass = res.data.find(c => !c.isExpired && c.dynamicStatus !== 'expired') || res.data[0];
+          setLatestClass(activeClass);
         }
       } catch (err) {
         console.error("Failed to fetch live classes for Hero", err);
@@ -46,21 +47,6 @@ const Hero = () => {
     <section className="relative w-full overflow-hidden">
       <div className="w-full py-10 md:py-16 px-4 md:px-12 max-w-[1400px] mx-auto flex flex-col gap-16 md:gap-24 min-h-[70vh]">
         
-        {/* Decorative Background Elements */}
-        {/* <div className="absolute top-10 right-10 opacity-30 pointer-events-none z-0">
-          <svg width="200" height="200" viewBox="0 0 100 100" fill="none" stroke="#B89355" strokeWidth="0.5">
-            <circle cx="50" cy="50" r="40" strokeDasharray="2 4" />
-            <path d="M50 0 L50 100 M0 50 L100 50 M15 15 L85 85 M15 85 L85 15" strokeOpacity="0.3"/>
-            <circle cx="50" cy="5" r="2" fill="#B89355" />
-            <circle cx="95" cy="50" r="2" fill="#B89355" />
-          </svg>
-        </div>
-        <div className="absolute bottom-0 right-0 opacity-20 pointer-events-none z-0">
-          <svg width="300" height="300" viewBox="0 0 100 100" fill="#B89355">
-            <path d="M80,50 A30,30 0 0,0 50,20 A40,40 0 0,1 50,80 A30,30 0 0,0 80,50 Z" />
-          </svg>
-        </div> */}
-
         {/* --- Top Section: Live Class --- */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center relative z-10 lg:min-h-[50vh]">
           {/* Left Side: NEW.png */}
@@ -83,12 +69,19 @@ const Hero = () => {
               Sara Tarot Card Reader
             </h1>
             
-            {latestClass ? (
+            {latestClass && (!latestClass.isExpired && latestClass.dynamicStatus !== 'expired') ? (
               <Link 
-                to={`/live-class/${latestClass.meetingUrl}`}
+                to={`/live-class/${latestClass.id}`}
                 className="bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0C3229] px-4 py-1.5 rounded-full font-bold tracking-[0.1em] text-sm md:text-base mb-6 shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] inline-flex items-center gap-2 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse border border-white"></div>
+                JOIN LIVE CLASS
+              </Link>
+            ) : latestClass ? (
+              <Link 
+                to={`/live-class/${latestClass.id}`}
+                className="bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0C3229] px-4 py-1.5 rounded-full font-bold tracking-[0.1em] text-sm md:text-base mb-6 shadow-lg shadow-amber-500/30 inline-flex items-center gap-2 hover:-translate-y-1 transition-all duration-300"
+              >
                 JOIN LIVE CLASS
               </Link>
             ) : (
@@ -148,29 +141,49 @@ const Hero = () => {
               <span className="text-[#0C3229] block">Access Pre-Recorded</span>
               <span className="text-[#0C3229] block">Tarot Classes</span>
             </h2>
-            
-            <button 
-              onClick={() => document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' })} 
-              className="inline-block bg-[#B69352] hover:bg-[#a38043] text-white text-lg md:text-xl font-semibold py-3 px-8 md:py-3.5 md:px-10 rounded-md transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-            >
-              Start Learning Now
-            </button>
+            <p className="text-slate-600 text-base md:text-lg mb-8 max-w-xl font-normal leading-relaxed">
+              Dive deep into the mystical realm with structured video lessons, comprehensive guides, and personalized learning materials designed to awaken your inner reader.
+            </p>
+            <div className="flex flex-wrap gap-4 items-center justify-center lg:justify-start">
+              <Link 
+                to="/videos"
+                className="bg-gradient-to-r from-[#B89355] to-[#c19b52] text-white px-8 py-3.5 rounded-full font-bold shadow-lg shadow-[#B89355]/30 hover:shadow-[#B89355]/50 hover:-translate-y-0.5 transition-all duration-300 text-sm md:text-base tracking-wide"
+              >
+                Watch Video Classes
+              </Link>
+              <Link 
+                to="/materials"
+                className="border-2 border-[#0C3229] text-[#0C3229] px-8 py-3.5 rounded-full font-bold hover:bg-[#0C3229] hover:text-white transition-all duration-300 text-sm md:text-base tracking-wide"
+              >
+                Study Material
+              </Link>
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* Image Zoom Modal */}
+      {/* Zoom Modal for Poster */}
       {isZoomed && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 md:p-8 cursor-pointer backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
           onClick={() => setIsZoomed(false)}
         >
-          <LazyLoad once><img 
-            src="/images/live.png" 
-            alt="Sara Tarot Card Reader Live Class Full" 
-            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
-          /></LazyLoad>
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img 
+              src="/images/live.png" 
+              alt="Sara Tarot Card Reader Live Class Full View" 
+              className="w-auto h-auto max-h-[85vh] object-contain rounded-2xl shadow-2xl mx-auto"
+            />
+            <button 
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 backdrop-blur-md transition-all duration-200"
+              onClick={() => setIsZoomed(false)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
     </section>

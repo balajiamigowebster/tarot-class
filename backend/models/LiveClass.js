@@ -20,6 +20,20 @@ const LiveClass = sequelize.define('LiveClass', {
     allowNull: false,
     defaultValue: []
   },
+  startDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    defaultValue: DataTypes.NOW
+  },
+  endDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'active'
+  },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,
