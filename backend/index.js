@@ -15,7 +15,6 @@ const LiveClassRecording = require('./models/LiveClassRecording');
 const LiveClassRegistration = require('./models/LiveClassRegistration');
 const AllowedStudent = require('./models/AllowedStudent');
 
-
 // Route imports
 const contentRoutes = require('./routes/contentRoutes');
 const accessRoutes = require('./routes/accessRoutes');
@@ -75,20 +74,45 @@ app.use('/api/live-classes', liveClassRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/save-student', studentSyncRoutes);
 
-// (Old placeholder upload endpoint removed)
-
 // Sync and Seed Database
 const syncAndSeed = async () => {
   try {
-    await sequelize.sync({ alter: true }); // Change to true to drop tables on restart
-    console.log('✅ Sequelize Models Synced');
+    // 1. Explicitly ensure LiveClass and LiveClassRecording tables and columns exist
+    try {
+      await LiveClass.sync();
+      await LiveClassRecording.sync();
+      
+      const [cols] = await sequelize.query("SHOW COLUMNS FROM `live_classes` LIKE 'startDate'");
+      if (!cols || cols.length === 0) {
+        await sequelize.query("ALTER TABLE `live_classes` ADD COLUMN `startDate` DATE NULL");
+      }
+      const [endCols] = await sequelize.query("SHOW COLUMNS FROM `live_classes` LIKE 'endDate'");
+      if (!endCols || endCols.length === 0) {
+        await sequelize.query("ALTER TABLE `live_classes` ADD COLUMN `endDate` DATE NULL");
+      }
+      const [statusCols] = await sequelize.query("SHOW COLUMNS FROM `live_classes` LIKE 'status'");
+      if (!statusCols || statusCols.length === 0) {
+        await sequelize.query("ALTER TABLE `live_classes` ADD COLUMN `status` VARCHAR(255) NOT NULL DEFAULT 'active'");
+      }
+      console.log('✅ Live Class and Recording tables verified successfully');
+    } catch (colErr) {
+      console.warn('Live class migration notice:', colErr.message);
+    }
+
+    // 2. General sync (safe fallback)
+    try {
+      await sequelize.sync();
+      console.log('✅ Sequelize Models Synced');
+    } catch (syncErr) {
+      console.warn('⚠️ General sync note (bypassed if keys full):', syncErr.message);
+    }
 
     // Auto-seed if empty
     const courseCount = await Course.count();
     if (courseCount === 0) {
       console.log('🌱 Seeding database...');
       
-      const course = await Course.create({
+      await Course.create({
         title: 'Tarot Card Reading Classes',
         slug: 'tarot-card-reading-classes',
         description: 'Step into the realm of Tarot and uncover the hidden truths waiting for you.'
