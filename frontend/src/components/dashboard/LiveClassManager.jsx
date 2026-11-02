@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { config } from '../../config';
-import { Video, Film, Plus, Calendar, Clock, Copy, Check, Trash2, ExternalLink, Play, AlertCircle, Info } from 'lucide-react';
+import { Video, Film, Plus, Calendar, Clock, Copy, Check, Trash2, ExternalLink, Play, AlertCircle, Info, Link as LinkIcon } from 'lucide-react';
 import VideoModal from '../VideoModal';
 
 const getTodayStr = () => {
@@ -22,6 +22,7 @@ const LiveClassManager = () => {
   const [classes, setClasses] = useState([]);
   const [classForm, setClassForm] = useState({
     title: '',
+    meetingUrl: '',
     startDate: getTodayStr(),
     endDate: getFutureDateStr(30)
   });
@@ -81,7 +82,7 @@ const LiveClassManager = () => {
     setLoadingClasses(true);
     setClassError(null);
     try {
-      const generatedMeetingUrl = `tarot-class-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const generatedMeetingUrl = classForm.meetingUrl.trim() || `tarot-class-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       await axios.post(`${config.API_BASE_URL}/api/live-classes`, {
         title: classForm.title,
         meetingUrl: generatedMeetingUrl,
@@ -91,6 +92,7 @@ const LiveClassManager = () => {
       });
       setClassForm({
         title: '',
+        meetingUrl: '',
         startDate: getTodayStr(),
         endDate: getFutureDateStr(30)
       });
@@ -269,6 +271,24 @@ const LiveClassManager = () => {
                 />
               </div>
 
+              {/* Optional Custom Meeting Link */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1 flex items-center gap-1.5">
+                  <LinkIcon className="w-4 h-4 text-amber-400" />
+                  Custom Meeting Link (Optional)
+                </label>
+                <input 
+                  type="text" 
+                  value={classForm.meetingUrl} 
+                  onChange={(e) => setClassForm({ ...classForm, meetingUrl: e.target.value })} 
+                  className="w-full rounded-xl bg-slate-800 border-indigo-900/50 text-white shadow-sm p-3 border focus:ring-amber-500 focus:border-amber-500 text-sm"
+                  placeholder="Leave blank for auto-created Tarot room, or paste Google Meet / Zoom / Custom link"
+                />
+                <span className="text-xs text-slate-400 mt-1 block">
+                  Leave empty to automatically generate a free high-definition room.
+                </span>
+              </div>
+
               {/* Date Range Selection (Default 30 days) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -363,7 +383,7 @@ const LiveClassManager = () => {
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Start Date</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">End Date (30 Days)</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Host Access</th>
+                  <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Host Launch</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Student Link</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
                 </tr>
@@ -384,6 +404,10 @@ const LiveClassManager = () => {
                     const endDateDisplay = cls.endDate 
                       ? new Date(cls.endDate).toLocaleDateString() 
                       : '30 days from creation';
+
+                    const directMeetingUrl = cls.meetingUrl?.startsWith('http')
+                      ? cls.meetingUrl
+                      : `https://meet.jit.si/${cls.meetingUrl}#userInfo.displayName=Host%20(Sara%20Tarot)`;
 
                     return (
                       <tr key={cls.id} className="hover:bg-slate-800/50 transition-colors">
@@ -407,13 +431,14 @@ const LiveClassManager = () => {
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm">
                           <a 
-                            href={`/live-class/${cls.id}?host=true`} 
+                            href={directMeetingUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-slate-950 font-semibold transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs shadow-md transition"
+                            title="Open direct meeting room in full window with zero time limits"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                            Join Room as Host
+                            Launch Room as Host
                           </a>
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm">

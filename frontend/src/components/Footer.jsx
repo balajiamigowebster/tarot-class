@@ -16,15 +16,13 @@ const Footer = () => {
       .catch(err => console.error("Error fetching categories for footer:", err));
   }, []);
 
-  // Hide footer on dashboard and login page
-  if (location.pathname.startsWith('/dashboard') || location.pathname === '/') {
+  // Hide footer on dashboard, live class room, and login page
+  if (location.pathname.startsWith('/dashboard') || location.pathname === '/' || location.pathname.startsWith('/live-class')) {
     return null;
   }
 
   return (
     <footer className="bg-[#0C3229] border-t-4 border-[#B89355] pt-16 pb-8 relative overflow-hidden z-20">
-
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 mb-12">
           

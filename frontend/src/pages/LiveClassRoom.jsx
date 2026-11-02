@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { config } from '../config';
-import { Video, ShieldCheck, ArrowLeft, User, Phone, Mail, AlertCircle } from 'lucide-react';
+import { Video, ShieldCheck, ArrowLeft, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 
 const LiveClassRoom = () => {
   const { id } = useParams();
@@ -19,6 +19,19 @@ const LiveClassRoom = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [classData, setClassData] = useState(null);
+
+  const displayName = isHost 
+    ? 'Host (Sara Tarot)' 
+    : (studentName ? studentName : 'Enrolled Student');
+
+  const getDirectMeetingUrl = () => {
+    if (!classData) return '';
+    const raw = classData.meetingUrl || `TarotClass_${classData.id}`;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return raw;
+    }
+    return `https://meet.jit.si/${raw}#userInfo.displayName="${encodeURIComponent(displayName)}"`;
+  };
 
   const handleVerify = async (e, customIdentifier = null) => {
     if (e) e.preventDefault();
@@ -53,7 +66,6 @@ const LiveClassRoom = () => {
   };
 
   useEffect(() => {
-    // If host or logged-in student, try immediate auto-verify
     if (isHost || token) {
       handleVerify(null, '');
     } else {
@@ -64,7 +76,14 @@ const LiveClassRoom = () => {
 
   useEffect(() => {
     if (classData && !loading && !error && !authStep) {
-      // Load Jitsi script if not already present
+      // If external link (like Google Meet or Zoom), redirect or open directly
+      const rawUrl = classData.meetingUrl || '';
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        window.location.href = rawUrl;
+        return;
+      }
+
+      // Load Jitsi script for embedded view
       if (!window.JitsiMeetExternalAPI) {
         const script = document.createElement('script');
         script.src = 'https://meet.jit.si/external_api.js';
@@ -81,15 +100,10 @@ const LiveClassRoom = () => {
     const domain = 'meet.jit.si';
     const roomName = classData.meetingUrl || `TarotClass_${classData.id}`;
     
-    // Ensure clean container
     const container = document.getElementById('jitsi-container');
     if (container) {
       container.innerHTML = '';
     }
-
-    const displayName = isHost 
-      ? 'Host (Sara Tarot)' 
-      : (studentName ? studentName : 'Enrolled Student');
 
     const options = {
       roomName,
@@ -127,6 +141,13 @@ const LiveClassRoom = () => {
       new window.JitsiMeetExternalAPI(domain, options);
     } catch (err) {
       console.error('Jitsi Meet initialization error:', err);
+    }
+  };
+
+  const handleOpenDirect = () => {
+    const url = getDirectMeetingUrl();
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
@@ -234,6 +255,21 @@ const LiveClassRoom = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-white overflow-hidden">
+      {/* Top Banner Notice: Unlimited Meeting Mode */}
+      <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex flex-wrap items-center justify-between text-xs text-amber-300 z-30">
+        <div className="flex items-center gap-2">
+          <span className="font-bold">⚡ Unlimited Classroom Duration:</span>
+          <span>To avoid Jitsi's 5-minute embedded demo cutoff, click the button to open in full tab without limits.</span>
+        </div>
+        <button
+          onClick={handleOpenDirect}
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition shadow-sm ml-auto"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Open in Full Tab (No 5-Min Limit)
+        </button>
+      </div>
+
       {/* Classroom Header Bar */}
       <div className="h-14 bg-slate-900 border-b border-indigo-900/50 px-4 sm:px-6 flex justify-between items-center shadow-lg flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
