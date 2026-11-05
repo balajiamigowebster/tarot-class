@@ -14,6 +14,8 @@ const LiveClass = require('./models/LiveClass');
 const LiveClassRecording = require('./models/LiveClassRecording');
 const LiveClassRegistration = require('./models/LiveClassRegistration');
 const AllowedStudent = require('./models/AllowedStudent');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
 
 // Route imports
 const contentRoutes = require('./routes/contentRoutes');
@@ -103,7 +105,41 @@ const syncAndSeed = async () => {
       console.warn('Live class migration notice:', colErr.message);
     }
 
-    // 2. General sync (safe fallback)
+    // 2. Explicitly ensure User table exists and seed Admin & Host with bcrypt hashing if empty
+    try {
+      await User.sync();
+      const userCount = await User.count();
+      if (userCount === 0) {
+        console.log('🌱 Creating initial Admin & Host in MySQL users table with bcrypt hashed passwords...');
+        const adminEmail = (process.env.ADMIN_EMAIL || 'admin@tarot.com').toLowerCase();
+        const adminPassword = process.env.ADMIN_PASSWORD || 'adminpassword';
+        const hostEmail = (process.env.HOST_EMAIL || 'host@tarot.com').toLowerCase();
+        const hostPassword = process.env.HOST_PASSWORD || 'hostpassword';
+
+        const hashedAdmin = await bcrypt.hash(adminPassword, 10);
+        const hashedHost = await bcrypt.hash(hostPassword, 10);
+
+        await User.bulkCreate([
+          {
+            name: 'Sara Tarot Admin',
+            email: adminEmail,
+            password: hashedAdmin,
+            role: 'admin'
+          },
+          {
+            name: 'Sara Tarot Host',
+            email: hostEmail,
+            password: hashedHost,
+            role: 'host'
+          }
+        ]);
+        console.log('✅ Admin and Host accounts created with secure bcrypt hashing in users table');
+      }
+    } catch (userErr) {
+      console.warn('User table sync/seed notice:', userErr.message);
+    }
+
+    // 3. General sync (safe fallback)
     try {
       await sequelize.sync();
       console.log('✅ Sequelize Models Synced');

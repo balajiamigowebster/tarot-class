@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { Op } = require('sequelize');
 const AllowedStudent = require('../models/AllowedStudent');
+const User = require('../models/User');
 
 // In-memory store for OTPs (in production, use Redis or DB)
 const otpStore = {};
@@ -13,41 +14,77 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // We mock the DB users based on .env
-    const users = [
-      {
-        email: process.env.ADMIN_EMAIL,
-        passwordHash: bcrypt.hashSync(process.env.ADMIN_PASSWORD || '', 10),
-        role: 'admin'
-      },
-      {
-        email: process.env.HOST_EMAIL,
-        passwordHash: bcrypt.hashSync(process.env.HOST_PASSWORD || '', 10),
-        role: 'host'
-      }
-    ];
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
-    const user = users.find(u => u.email === email);
+    const cleanEmail = String(email).trim().toLowerCase();
+
+    // 1. Look for user in MySQL users table
+    let user = await User.findOne({ where: { email: cleanEmail } });
+    
+    // Fallback: if not in database yet, check .env & auto-seed into DB
     if (!user) {
+      const envUsers = [
+        {
+          email: (process.env.ADMIN_EMAIL || 'admin@tarot.com').toLowerCase(),
+          rawPassword: process.env.ADMIN_PASSWORD || 'adminpassword',
+          role: 'admin',
+          name: 'Sara Tarot Admin'
+        },
+        {
+          email: (process.env.HOST_EMAIL || 'host@tarot.com').toLowerCase(),
+          rawPassword: process.env.HOST_PASSWORD || 'hostpassword',
+          role: 'host',
+          name: 'Sara Tarot Host'
+        }
+      ];
+
+      const matchedEnvUser = envUsers.find(u => u.email === cleanEmail);
+      if (matchedEnvUser && matchedEnvUser.rawPassword === password) {
+        // Hash password with bcrypt and save to MySQL users table
+        const hashedPassword = await bcrypt.hash(password, 10);
+        try {
+          user = await User.create({
+            name: matchedEnvUser.name,
+            email: matchedEnvUser.email,
+            password: hashedPassword,
+            role: matchedEnvUser.role
+          });
+        } catch (createErr) {
+          console.error('Error auto-creating user:', createErr);
+        }
+        
+        const payload = {
+          id: user ? user.id : 1,
+          email: matchedEnvUser.email,
+          role: matchedEnvUser.role
+        };
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+        return res.json({ token, role: matchedEnvUser.role, name: matchedEnvUser.name });
+      }
+
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    // 2. Compare hashed password stored in MySQL table using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     const payload = {
+      id: user.id,
       email: user.email,
       role: user.role
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
     
-    res.json({ token, role: user.role });
+    res.json({ token, role: user.role, name: user.name });
 
   } catch (err) {
-    console.error(err);
+    console.error('Login Error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
