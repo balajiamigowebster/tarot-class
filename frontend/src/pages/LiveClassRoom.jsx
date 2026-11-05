@@ -239,9 +239,12 @@ const LiveClassRoom = () => {
             Waiting for Teacher
           </span>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-            {waitingTitle}
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-1">
+            Sara Tarot Card Reader
           </h1>
+          <p className="text-amber-400 font-semibold text-sm tracking-wider uppercase mb-4">
+            Live Interactive Classroom
+          </p>
 
           <div className="bg-slate-800/60 border border-indigo-900/30 rounded-2xl p-5 mb-6 text-slate-300 text-sm leading-relaxed">
             <p className="font-semibold text-white mb-1">
@@ -289,9 +292,12 @@ const LiveClassRoom = () => {
           ✓ Host is Live: {displayName}
         </span>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-          {classData?.title || 'Live Tarot Class'}
+        <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-1">
+          Sara Tarot Card Reader
         </h1>
+        <p className="text-emerald-400 font-semibold text-sm tracking-wider uppercase mb-4">
+          Live Interactive Classroom
+        </p>
 
         <p className="text-slate-400 text-sm leading-relaxed mb-6">
           Connecting you to the live classroom now...
