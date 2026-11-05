@@ -11,6 +11,7 @@ const Hero = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const [registerStatus, setRegisterStatus] = useState(null);
   const [latestClass, setLatestClass] = useState(null);
+  const studentName = localStorage.getItem('studentName') || 'Student';
 
   React.useEffect(() => {
     const fetchLatestClass = async () => {
@@ -28,11 +29,26 @@ const Hero = () => {
     fetchLatestClass();
   }, []);
 
+  const getDirectMeetingUrl = (cls) => {
+    if (!cls) return '';
+    const raw = cls.meetingUrl || `TarotClass_${cls.id}`;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return raw;
+    }
+    const studentButtons = encodeURIComponent(JSON.stringify([
+      'microphone', 'camera', 'chat', 'raisehand', 'tileview', 'settings', 'hangup'
+    ]));
+    return `https://meet.jit.si/${raw}#userInfo.displayName="${encodeURIComponent(studentName)}"&config.disableInviteFunctions=true&config.disableRemoteMute=true&config.breakoutRooms.hideAddRoomButton=true&config.breakoutRooms.hideMuteAllButton=true&interfaceConfig.HIDE_INVITE_MORE_HEADER=true&config.toolbarButtons=${studentButtons}`;
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential);
       const { email, name } = decoded;
       
+      if (email) localStorage.setItem('studentEmail', email);
+      if (name) localStorage.setItem('studentName', name);
+
       const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/register`, { email, name });
       if (res.status === 200) {
         setRegisterStatus('Success! You are registered for the Live Class.');
@@ -74,7 +90,7 @@ const Hero = () => {
                 to={`/live-class/${latestClass.id}`}
                 className="bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0C3229] px-4 py-1.5 rounded-full font-bold tracking-[0.1em] text-sm md:text-base mb-6 shadow-[0_0_15px_rgba(245,158,11,0.5)] hover:shadow-[0_0_25px_rgba(245,158,11,0.8)] inline-flex items-center gap-2 hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse border border-white"></div>
+                <div className={`w-2 h-2 rounded-full ${latestClass.isLive ? 'bg-green-500 animate-ping' : 'bg-amber-400'} border border-white`}></div>
                 JOIN LIVE CLASS
               </Link>
             ) : latestClass ? (

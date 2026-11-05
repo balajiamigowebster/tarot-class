@@ -94,6 +94,10 @@ const syncAndSeed = async () => {
       if (!statusCols || statusCols.length === 0) {
         await sequelize.query("ALTER TABLE `live_classes` ADD COLUMN `status` VARCHAR(255) NOT NULL DEFAULT 'active'");
       }
+      const [isLiveCols] = await sequelize.query("SHOW COLUMNS FROM `live_classes` LIKE 'isLive'");
+      if (!isLiveCols || isLiveCols.length === 0) {
+        await sequelize.query("ALTER TABLE `live_classes` ADD COLUMN `isLive` BOOLEAN NOT NULL DEFAULT FALSE");
+      }
       console.log('✅ Live Class and Recording tables verified successfully');
     } catch (colErr) {
       console.warn('Live class migration notice:', colErr.message);

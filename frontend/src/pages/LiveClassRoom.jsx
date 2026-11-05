@@ -2,43 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { config } from '../config';
-import { Video, ShieldCheck, ArrowLeft, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
+import { Video, ArrowLeft, ExternalLink, AlertCircle, Sparkles, Clock, RefreshCw } from 'lucide-react';
 
 const LiveClassRoom = () => {
   const { id } = useParams();
   const role = localStorage.getItem('role');
   const token = localStorage.getItem('token');
   const studentName = localStorage.getItem('studentName') || '';
+  const studentEmail = localStorage.getItem('studentEmail') || '';
 
   // Determine if user is host
   const isHostQuery = new URLSearchParams(window.location.search).get('host') === 'true';
   const isHost = isHostQuery || role === 'admin' || role === 'host';
 
-  const [identifier, setIdentifier] = useState(''); // email or phone
-  const [authStep, setAuthStep] = useState(!isHost && !token);
+  const [identifier, setIdentifier] = useState(studentEmail); // email or phone
+  const [verifiedIdentifier, setVerifiedIdentifier] = useState(studentEmail);
+  const [authStep, setAuthStep] = useState(!isHost && !token && !studentEmail);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [classData, setClassData] = useState(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [waitingTitle, setWaitingTitle] = useState('Live Tarot Class');
 
   const displayName = isHost 
     ? 'Host (Sara Tarot)' 
     : (studentName ? studentName : 'Enrolled Student');
 
-  const getDirectMeetingUrl = () => {
-    if (!classData) return '';
-    const raw = classData.meetingUrl || `TarotClass_${classData.id}`;
+  const getDirectMeetingUrl = (data = classData) => {
+    if (!data) return '';
+    const raw = data.meetingUrl || `TarotClass_${data.id}`;
     if (raw.startsWith('http://') || raw.startsWith('https://')) {
       return raw;
     }
-    return `https://meet.jit.si/${raw}#userInfo.displayName="${encodeURIComponent(displayName)}"`;
+    if (!isHost) {
+      const studentButtons = encodeURIComponent(JSON.stringify([
+        'microphone', 'camera', 'chat', 'raisehand', 'tileview', 'settings', 'hangup'
+      ]));
+      return `https://meet.jit.si/${raw}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.disableInviteFunctions=true&config.disableRemoteMute=true&config.breakoutRooms.hideAddRoomButton=true&config.breakoutRooms.hideMuteAllButton=true&config.participantsPane.hideMuteAllButton=true&config.participantsPane.hideMoreActionsButton=true&config.remoteVideoMenu.disableKick=true&config.remoteVideoMenu.disableGrantModerator=true&interfaceConfig.HIDE_INVITE_MORE_HEADER=true&interfaceConfig.SHOW_JITSI_WATERMARK=false&config.toolbarButtons=${studentButtons}&config.doNotStoreRoom=true&config.prejoinConfig.enabled=false`;
+    }
+    const hostButtons = encodeURIComponent(JSON.stringify([
+      'microphone', 'camera', 'desktop', 'chat', 'recording', 'raisehand', 'participants-pane', 'tileview', 'settings', 'mute-everyone', 'security', 'hangup'
+    ]));
+    return `https://meet.jit.si/${raw}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.toolbarButtons=${hostButtons}`;
   };
 
-  const handleVerify = async (e, customIdentifier = null) => {
+  const handleVerify = async (e, customIdentifier = null, silent = false) => {
     if (e) e.preventDefault();
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
 
-    const val = customIdentifier !== null ? customIdentifier : identifier;
+    const val = customIdentifier !== null ? customIdentifier : (identifier || verifiedIdentifier);
     const isEmail = val.includes('@');
 
     try {
@@ -54,103 +68,61 @@ const LiveClassRoom = () => {
       );
 
       if (res.data.authorized) {
+        if (val) setVerifiedIdentifier(val);
+
+        // Check if student is waiting for host to join
+        if (res.data.isWaiting) {
+          setIsWaiting(true);
+          setWaitingTitle(res.data.classTitle || 'Live Tarot Class');
+          setAuthStep(false);
+          setLoading(false);
+          return;
+        }
+
+        // Host is live and student is authorized -> launch room!
+        setIsWaiting(false);
         setClassData(res.data.classData);
         setAuthStep(false);
+        setRedirecting(true);
+        
+        const targetUrl = getDirectMeetingUrl(res.data.classData);
+        if (targetUrl) {
+          window.location.replace(targetUrl);
+        }
       }
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Failed to join class. It may have expired or you need to register.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isHost || token) {
       handleVerify(null, '');
+    } else if (studentEmail) {
+      handleVerify(null, studentEmail);
     } else {
       setLoading(false);
       setAuthStep(true);
     }
   }, [id, isHost]);
 
+  // If waiting for host, auto-poll every 3 seconds
   useEffect(() => {
-    if (classData && !loading && !error && !authStep) {
-      // If external link (like Google Meet or Zoom), redirect or open directly
-      const rawUrl = classData.meetingUrl || '';
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-        window.location.href = rawUrl;
-        return;
-      }
-
-      // Load Jitsi script for embedded view
-      if (!window.JitsiMeetExternalAPI) {
-        const script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
-        script.async = true;
-        script.onload = initJitsi;
-        document.body.appendChild(script);
-      } else {
-        initJitsi();
-      }
+    let timer;
+    if (isWaiting && !isHost) {
+      timer = setInterval(() => {
+        handleVerify(null, verifiedIdentifier || identifier || studentEmail, true);
+      }, 3000);
     }
-  }, [classData, loading, error, authStep]);
-
-  const initJitsi = () => {
-    const domain = 'meet.jit.si';
-    const roomName = classData.meetingUrl || `TarotClass_${classData.id}`;
-    
-    const container = document.getElementById('jitsi-container');
-    if (container) {
-      container.innerHTML = '';
-    }
-
-    const options = {
-      roomName,
-      width: '100%',
-      height: '100%',
-      parentNode: container,
-      userInfo: {
-        displayName
-      },
-      configOverwrite: {
-        startWithAudioMuted: !isHost,
-        startWithVideoMuted: !isHost,
-        prejoinPageEnabled: false,
-        disableDeepLinking: true,
-        enableWelcomePage: false,
-        toolbarButtons: isHost ? [
-          'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-          'fminitial', 'hangup', 'chat', 'recording', 'livestreaming',
-          'etherpad', 'sharedvideo', 'settings', 'raisehand',
-          'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
-          'tileview', 'videobackgroundblur', 'mute-everyone', 'security'
-        ] : [
-          'microphone', 'camera', 'fullscreen', 'hangup', 'chat',
-          'raisehand', 'tileview', 'settings'
-        ]
-      },
-      interfaceConfigOverwrite: {
-        SHOW_JITSI_WATERMARK: false,
-        SHOW_WATERMARK_FOR_GUESTS: false,
-        DEFAULT_REMOTE_DISPLAY_NAME: 'Student'
-      }
+    return () => {
+      if (timer) clearInterval(timer);
     };
+  }, [isWaiting, isHost, verifiedIdentifier, identifier, studentEmail]);
 
-    try {
-      new window.JitsiMeetExternalAPI(domain, options);
-    } catch (err) {
-      console.error('Jitsi Meet initialization error:', err);
-    }
-  };
-
-  const handleOpenDirect = () => {
-    const url = getDirectMeetingUrl();
-    if (url) {
-      window.open(url, '_blank');
-    }
-  };
-
+  // Form to verify credentials (for unregistered or unauthenticated visits)
   if (authStep) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -216,15 +188,7 @@ const LiveClassRoom = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4">
-        <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
-        <p className="text-slate-400 text-sm">Connecting to live classroom...</p>
-      </div>
-    );
-  }
-
+  // Error screen
   if (error) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 text-white">
@@ -253,63 +217,98 @@ const LiveClassRoom = () => {
     );
   }
 
-  return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-white overflow-hidden">
-      {/* Top Banner Notice: Unlimited Meeting Mode */}
-      <div className="bg-amber-500/10 border-b border-amber-500/30 px-4 py-2 flex flex-wrap items-center justify-between text-xs text-amber-300 z-30">
-        <div className="flex items-center gap-2">
-          <span className="font-bold">⚡ Unlimited Classroom Duration:</span>
-          <span>To avoid Jitsi's 5-minute embedded demo cutoff, click the button to open in full tab without limits.</span>
+  // Waiting Screen: Host has not started yet
+  if (isWaiting && !isHost) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 py-12 text-white relative overflow-hidden">
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute top-10 right-10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 left-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
         </div>
-        <button
-          onClick={handleOpenDirect}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition shadow-sm ml-auto"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Open in Full Tab (No 5-Min Limit)
-        </button>
-      </div>
 
-      {/* Classroom Header Bar */}
-      <div className="h-14 bg-slate-900 border-b border-indigo-900/50 px-4 sm:px-6 flex justify-between items-center shadow-lg flex-shrink-0 z-20">
-        <div className="flex items-center gap-3">
-          <Link 
-            to={isHost ? "/dashboard" : "/home"} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-            title="Leave classroom"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <h1 className="text-sm sm:text-base font-bold text-white truncate max-w-[200px] sm:max-w-md">
-              {classData?.title || 'Live Tarot Class'}
-            </h1>
-            <span className="text-xs text-amber-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Live Room Active
+        <div className="max-w-lg w-full bg-slate-900 border border-indigo-900/50 rounded-3xl p-8 sm:p-10 shadow-2xl text-center relative z-10">
+          <div className="w-20 h-20 bg-amber-500/10 border-2 border-amber-500/30 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-400 relative">
+            <Clock className="w-10 h-10 animate-pulse text-amber-400" />
+            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
             </span>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-            isHost 
-              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
-              : 'bg-indigo-950 text-indigo-300 border-indigo-800/40'
-          }`}>
-            {isHost ? '👑 Host / Teacher' : '🎓 Student'}
+          <span className="px-3.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-block mb-3 uppercase tracking-wider">
+            Waiting for Teacher
           </span>
-          <Link 
-            to={isHost ? "/dashboard" : "/home"}
-            className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 text-red-300 text-xs font-semibold border border-red-800/40 transition"
-          >
-            Leave
-          </Link>
+
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+            {waitingTitle}
+          </h1>
+
+          <div className="bg-slate-800/60 border border-indigo-900/30 rounded-2xl p-5 mb-6 text-slate-300 text-sm leading-relaxed">
+            <p className="font-semibold text-white mb-1">
+              The teacher has not started this live class yet.
+            </p>
+            <p className="text-slate-400 text-xs mt-1">
+              Please stay on this page. As soon as the host joins, you will automatically be connected to the live session!
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-medium">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <span>Checking host status every few seconds...</span>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-800 flex justify-center">
+            <Link 
+              to="/home" 
+              className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Home Page
+            </Link>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Jitsi Meet Container */}
-      <div id="jitsi-container" className="flex-1 w-full bg-black relative"></div>
+  // Instant Launch / Transition Screen (Host is live, redirecting to full room!)
+  const directUrl = getDirectMeetingUrl();
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center px-4 py-12 text-white relative overflow-hidden">
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-10 right-10 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="max-w-lg w-full bg-slate-900 border border-indigo-900/50 rounded-3xl p-8 sm:p-10 shadow-2xl text-center relative z-10">
+        <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl flex items-center justify-center mx-auto mb-5 text-emerald-400">
+          <Sparkles className="w-8 h-8 animate-pulse" />
+        </div>
+
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 inline-block mb-3">
+          ✓ Host is Live: {displayName}
+        </span>
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          {classData?.title || 'Live Tarot Class'}
+        </h1>
+
+        <p className="text-slate-400 text-sm leading-relaxed mb-6">
+          Connecting you to the live classroom now...
+        </p>
+
+        <a
+          href={directUrl}
+          className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-extrabold rounded-2xl shadow-xl shadow-amber-500/30 transition-all flex items-center justify-center gap-2 text-base uppercase tracking-wider hover:-translate-y-0.5"
+        >
+          <ExternalLink className="w-5 h-5" />
+          Enter Classroom Now
+        </a>
+
+        <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500">
+          Protected Live Tarot Classroom • Sara Tarot Card Reader
+        </div>
+      </div>
     </div>
   );
 };

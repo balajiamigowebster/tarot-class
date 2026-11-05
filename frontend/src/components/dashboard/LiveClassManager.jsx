@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { config } from '../../config';
-import { Video, Film, Plus, Calendar, Clock, Copy, Check, Trash2, ExternalLink, Play, AlertCircle, Info, Link as LinkIcon } from 'lucide-react';
+import { Video, Film, Plus, Calendar, Clock, Copy, Check, Trash2, ExternalLink, Play, Square, AlertCircle, Info, Link as LinkIcon } from 'lucide-react';
 import VideoModal from '../VideoModal';
 
 const getTodayStr = () => {
@@ -45,6 +45,8 @@ const LiveClassManager = () => {
   const [videoFile, setVideoFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [loadingRecordings, setLoadingRecordings] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [recordingError, setRecordingError] = useState(null);
   const [recordingSuccess, setRecordingSuccess] = useState(null);
   const [selectedPreviewVideo, setSelectedPreviewVideo] = useState(null);
@@ -125,10 +127,44 @@ const LiveClassManager = () => {
     setTimeout(() => setCopiedClassId(null), 2500);
   };
 
+  // Start Class (Host Goes Live)
+  const handleStartClass = async (cls) => {
+    try {
+      await axios.post(`${config.API_BASE_URL}/api/live-classes/${cls.id}/start`);
+      setClasses(prev => prev.map(c => c.id === cls.id ? { ...c, isLive: true } : c));
+      
+      const hostButtons = encodeURIComponent(JSON.stringify([
+        'microphone', 'camera', 'desktop', 'chat', 'recording', 'raisehand', 'participants-pane', 'tileview', 'settings', 'mute-everyone', 'security', 'hangup'
+      ]));
+      const directMeetingUrl = cls.meetingUrl?.startsWith('http')
+        ? cls.meetingUrl
+        : `https://meet.jit.si/${cls.meetingUrl}#userInfo.displayName=Host%20(Sara%20Tarot)&config.toolbarButtons=${hostButtons}`;
+      
+      window.open(directMeetingUrl, '_blank');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to start live class: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // End Class (Host Closes Room for Students)
+  const handleEndClass = async (id) => {
+    if (!window.confirm('Are you sure you want to end this live class session? Waiting or attending students will be disconnected.')) return;
+    try {
+      await axios.post(`${config.API_BASE_URL}/api/live-classes/${id}/end`);
+      setClasses(prev => prev.map(c => c.id === id ? { ...c, isLive: false } : c));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to end live class: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   // Handle Recording Creation
   const handleRecordingSubmit = async (e) => {
     e.preventDefault();
     setLoadingRecordings(true);
+    setUploadProgress(0);
+    setIsUploading(true);
     setRecordingError(null);
     setRecordingSuccess(null);
 
@@ -159,11 +195,18 @@ const LiveClassManager = () => {
         formData.append('thumbnail', thumbnailFile);
       }
 
-      await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percent);
+          }
+        }
       });
 
-      setRecordingSuccess('Live class recording added successfully! It will be accessible for 30 days.');
+      setUploadProgress(100);
+      setRecordingSuccess('Live class recording uploaded and published successfully! Accessible for 30 days.');
       setRecordingForm({
         title: '',
         description: '',
@@ -175,12 +218,16 @@ const LiveClassManager = () => {
       });
       setVideoFile(null);
       setThumbnailFile(null);
-      fetchRecordings();
+      await fetchRecordings();
     } catch (err) {
       console.error(err);
       setRecordingError(err.response?.data?.error || err.message || 'Failed to save recording');
     } finally {
       setLoadingRecordings(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 3500);
     }
   };
 
@@ -383,7 +430,7 @@ const LiveClassManager = () => {
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Start Date</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">End Date (30 Days)</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Host Launch</th>
+                  <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Host Gating</th>
                   <th className="px-5 py-3 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Student Link</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Action</th>
                 </tr>
@@ -405,9 +452,12 @@ const LiveClassManager = () => {
                       ? new Date(cls.endDate).toLocaleDateString() 
                       : '30 days from creation';
 
+                    const hostButtons = encodeURIComponent(JSON.stringify([
+                      'microphone', 'camera', 'desktop', 'chat', 'recording', 'raisehand', 'participants-pane', 'tileview', 'settings', 'mute-everyone', 'security', 'hangup'
+                    ]));
                     const directMeetingUrl = cls.meetingUrl?.startsWith('http')
                       ? cls.meetingUrl
-                      : `https://meet.jit.si/${cls.meetingUrl}#userInfo.displayName=Host%20(Sara%20Tarot)`;
+                      : `https://meet.jit.si/${cls.meetingUrl}#userInfo.displayName=Host%20(Sara%20Tarot)&config.toolbarButtons=${hostButtons}`;
 
                     return (
                       <tr key={cls.id} className="hover:bg-slate-800/50 transition-colors">
@@ -421,25 +471,58 @@ const LiveClassManager = () => {
                           {endDateDisplay}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`px-2.5 py-1 inline-flex text-xs leading-4 font-bold rounded-full ${
-                            isExpired 
-                              ? 'bg-red-900/40 text-red-400 border border-red-500/40' 
-                              : 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/40'
-                          }`}>
-                            {isExpired ? 'Expired' : 'Active'}
-                          </span>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className={`px-2 py-0.5 inline-flex text-xs font-bold rounded-full ${
+                              isExpired 
+                                ? 'bg-red-900/40 text-red-400 border border-red-500/40' 
+                                : 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/40'
+                            }`}>
+                              {isExpired ? 'Expired' : 'Active (30d)'}
+                            </span>
+                            {cls.isLive ? (
+                              <span className="px-2 py-0.5 inline-flex items-center gap-1.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                LIVE NOW
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 inline-flex items-center gap-1 text-[11px] font-medium rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                Room Closed
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm">
-                          <a 
-                            href={directMeetingUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs shadow-md transition"
-                            title="Open direct meeting room in full window with zero time limits"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Launch Room as Host
-                          </a>
+                          {cls.isLive ? (
+                            <div className="flex items-center gap-2">
+                              <a 
+                                href={directMeetingUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 font-bold text-xs shadow-md transition"
+                                title="Re-enter active host room"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Host Room
+                              </a>
+                              <button
+                                onClick={() => handleEndClass(cls.id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-900/60 text-red-300 hover:bg-red-800 hover:text-white border border-red-700/50 text-xs font-semibold transition"
+                                title="End Class (Disconnect students / close room)"
+                              >
+                                <Square className="w-3 h-3 fill-current" />
+                                End
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleStartClass(cls)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-slate-950 hover:from-emerald-400 hover:to-green-400 font-bold text-xs shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5"
+                              title="Start this live class (Admit waiting students and open room)"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              Start Class (Go Live)
+                            </button>
+                          )}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm">
                           <button
@@ -455,7 +538,7 @@ const LiveClassManager = () => {
                             ) : (
                               <>
                                 <Copy className="w-3.5 h-3.5" />
-                                <span>Copy Student Link</span>
+                                <span>Copy Link</span>
                               </>
                             )}
                           </button>
@@ -670,14 +753,61 @@ const LiveClassManager = () => {
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-4">
                 <button 
                   type="submit" 
                   disabled={loadingRecordings}
-                  className="bg-amber-500 text-slate-950 font-bold px-6 py-3 rounded-xl hover:bg-amber-400 transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                  className={`bg-amber-500 text-slate-950 font-bold px-6 py-3 rounded-xl hover:bg-amber-400 transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 ${
+                    loadingRecordings ? 'opacity-85 cursor-not-allowed' : ''
+                  }`}
                 >
-                  {loadingRecordings ? 'Uploading & Processing...' : 'Save & Publish Recording'}
+                  {loadingRecordings ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                      <span>{uploadProgress === 100 ? 'Saving Video...' : `Uploading (${uploadProgress}%)`}</span>
+                    </>
+                  ) : (
+                    'Save & Publish Recording'
+                  )}
                 </button>
+
+                {/* Real-time Upload Percentage & Progress Bar */}
+                {isUploading && (
+                  <div className="flex-1 max-w-md bg-slate-900 border border-indigo-900/70 rounded-xl p-3 shadow-inner">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                        {uploadProgress === 100 ? (
+                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                            ✓ 100% Uploaded! Saving to website...
+                          </span>
+                        ) : (
+                          <span className="text-amber-400 font-medium">
+                            Uploading video to server...
+                          </span>
+                        )}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full font-extrabold text-xs tracking-wider ${
+                        uploadProgress === 100 
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' 
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}>
+                        {uploadProgress}%
+                      </span>
+                    </div>
+
+                    {/* Visual Progress Bar */}
+                    <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-indigo-950">
+                      <div 
+                        className={`h-full transition-all duration-300 ease-out rounded-full ${
+                          uploadProgress === 100
+                            ? 'bg-gradient-to-r from-emerald-500 to-green-400'
+                            : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500'
+                        }`}
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
               </div>
             </form>
           </div>

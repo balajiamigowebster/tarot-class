@@ -112,6 +112,36 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Start a live class (host goes live)
+router.post('/:id/start', async (req, res) => {
+  try {
+    const classId = req.params.id;
+    const cls = await LiveClass.findByPk(classId);
+    if (!cls) return res.status(404).json({ error: 'Class not found' });
+    cls.isLive = true;
+    await cls.save();
+    res.json({ message: 'Class is now live', isLive: true });
+  } catch (error) {
+    console.error('Error starting live class:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// End a live class
+router.post('/:id/end', async (req, res) => {
+  try {
+    const classId = req.params.id;
+    const cls = await LiveClass.findByPk(classId);
+    if (!cls) return res.status(404).json({ error: 'Class not found' });
+    cls.isLive = false;
+    await cls.save();
+    res.json({ message: 'Class ended', isLive: false });
+  } catch (error) {
+    console.error('Error ending live class:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Verify access to a live class (accepts either numeric ID or meetingUrl)
 router.post('/verify-access/:id', async (req, res) => {
   try {
@@ -142,21 +172,27 @@ router.post('/verify-access/:id', async (req, res) => {
       });
     }
 
-    // Host has immediate authorization
+    // Host has immediate authorization & marks class as live
     if (isHost) {
-      return res.json({ authorized: true, classData: liveClass, role: 'host' });
+      if (!liveClass.isLive) {
+        liveClass.isLive = true;
+        await liveClass.save();
+      }
+      return res.json({ authorized: true, isLive: true, isWaiting: false, classData: liveClass, role: 'host' });
     }
 
-    // For students: check if registered or active student
+    // Check student authorization
+    let isAuthorizedStudent = false;
+
     if (email) {
       const registration = await LiveClassRegistration.findOne({ where: { email } });
       const inAllowedEmails = liveClass.allowedEmails && liveClass.allowedEmails.includes(email);
       if (registration || inAllowedEmails) {
-        return res.json({ authorized: true, classData: liveClass, role: 'student' });
+        isAuthorizedStudent = true;
       }
     }
 
-    if (phone) {
+    if (!isAuthorizedStudent && phone) {
       const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
       const student = await AllowedStudent.findOne({
         where: {
@@ -164,22 +200,34 @@ router.post('/verify-access/:id', async (req, res) => {
         }
       });
       if (student && student.status === 'active') {
-        return res.json({ authorized: true, classData: liveClass, role: 'student' });
+        isAuthorizedStudent = true;
       }
     }
 
-    // If student has authorization token from header
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      return res.json({ authorized: true, classData: liveClass, role: 'student' });
+    if (!isAuthorizedStudent && req.headers.authorization) {
+      isAuthorizedStudent = true;
     }
 
-    // If no credentials matched yet
-    return res.status(403).json({ 
-      authorized: false, 
-      message: 'Access denied. Please enter your registered email or active phone number to join.' 
-    });
+    if (!isAuthorizedStudent) {
+      return res.status(403).json({ 
+        authorized: false, 
+        message: 'Access denied. Please enter your registered email or active phone number to join.' 
+      });
+    }
 
+    // Ensure Host has joined first!
+    if (!liveClass.isLive) {
+      return res.json({
+        authorized: true,
+        isWaiting: true,
+        isLive: false,
+        classTitle: liveClass.title,
+        message: 'The teacher has not started the class yet. Please wait, you will enter automatically when the host joins.'
+      });
+    }
+
+    // Host is live and student is authorized
+    return res.json({ authorized: true, isWaiting: false, isLive: true, classData: liveClass, role: 'student' });
   } catch (error) {
     console.error('Error verifying class access:', error);
     res.status(500).json({ error: 'Server error' });

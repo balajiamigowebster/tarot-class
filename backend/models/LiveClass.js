@@ -34,6 +34,11 @@ const LiveClass = sequelize.define('LiveClass', {
     allowNull: false,
     defaultValue: 'active'
   },
+  isLive: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
   createdAt: {
     type: DataTypes.DATE,
     allowNull: false,
