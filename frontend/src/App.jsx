@@ -46,6 +46,7 @@ function App() {
           <Route path="/admin/live-classes" element={<ProtectedRoute><LiveClassManager /></ProtectedRoute>} />
           <Route path="/live-class/:id" element={<ProtectedRoute><LiveClassRoom /></ProtectedRoute>} />
           <Route path="/live-recordings" element={<ProtectedRoute><LiveClassRecorded /></ProtectedRoute>} />
+          <Route path="/live-recordings/:recordingId" element={<ProtectedRoute><LiveClassRecorded /></ProtectedRoute>} />
           <Route path="/syllabus/:slug" element={<ProtectedRoute><SyllabusCategoryPage /></ProtectedRoute>} />
           <Route path="/syllabus/:slug/video/:videoId" element={<ProtectedRoute><VideoPlayerPage /></ProtectedRoute>} />
         </Routes>

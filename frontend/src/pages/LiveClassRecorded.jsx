@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { config } from '../config';
-import { Play, Clock, Calendar, Search, Film, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
-import VideoModal from '../components/VideoModal';
+import { 
+  Play, 
+  Clock, 
+  Calendar, 
+  Search, 
+  Film, 
+  ArrowRight, 
+  ArrowLeft, 
+  ShieldCheck, 
+  AlertCircle,
+  CheckCircle2
+} from 'lucide-react';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
 import _ReactLazyLoad from 'react-lazyload';
 const LazyLoad = _ReactLazyLoad.default || _ReactLazyLoad;
 
 const LiveClassRecorded = () => {
+  const { recordingId } = useParams();
+  const navigate = useNavigate();
+
   const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +46,35 @@ const LiveClassRecorded = () => {
     fetchRecordings();
   }, []);
 
-  // Filter recordings
+  // When recordings are loaded or recordingId param changes, sync selectedVideo
+  useEffect(() => {
+    if (recordings.length > 0) {
+      if (recordingId) {
+        const found = recordings.find(r => r.id.toString() === recordingId.toString());
+        if (found) {
+          setSelectedVideo(found);
+        } else {
+          // If invalid id, default to first active
+          setSelectedVideo(recordings[0]);
+        }
+      }
+    }
+  }, [recordingId, recordings]);
+
+  // Handle selecting a video to play
+  const handleSelectVideo = (rec) => {
+    setSelectedVideo(rec);
+    navigate(`/live-recordings/${rec.id}`, { replace: false });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Handle returning back to grid view
+  const handleBackToGrid = () => {
+    setSelectedVideo(null);
+    navigate('/live-recordings');
+  };
+
+  // Filter recordings for catalog / sidebar
   const filteredRecordings = recordings.filter(rec => {
     const matchesSearch = 
       rec.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -45,6 +88,211 @@ const LiveClassRecorded = () => {
     return true;
   });
 
+  // Resolve video & thumbnail URLs with backend origin
+  const getResolvedSrc = (video) => {
+    if (!video) return '';
+    const raw = video.videoUrl || video.video_url;
+    if (!raw) return '';
+    return raw.startsWith('http') ? raw : `${config.API_BASE_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
+  };
+
+  const getResolvedPoster = (video) => {
+    if (!video) return undefined;
+    const raw = video.thumbnailUrl || video.thumbnail_url;
+    if (!raw) return undefined;
+    return raw.startsWith('http') ? raw : `${config.API_BASE_URL}${raw.startsWith('/') ? '' : '/'}${raw}`;
+  };
+
+  // =========================================================================
+  // VIEW MODE 1: DEDICATED FULL-PAGE VIDEO PLAYER (Like Syllabus Video Player)
+  // =========================================================================
+  if (selectedVideo) {
+    const currentVideo = selectedVideo;
+    const formattedClassDate = new Date(currentVideo.recordedDate).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    const isCurrentExpired = currentVideo.isExpired;
+    const otherRecordings = recordings.filter(r => r.id !== currentVideo.id);
+
+    return (
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-[85vh]">
+        {/* Back Link to Grid */}
+        <button
+          onClick={handleBackToGrid}
+          className="inline-flex items-center text-[#B89355] hover:text-[#0C3229] font-bold mb-6 transition-colors group cursor-pointer"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to All Recordings
+        </button>
+
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main Video Section (Left Column) */}
+          <div className="flex-grow lg:w-2/3 xl:w-3/4 flex flex-col">
+            <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-xl border border-slate-200">
+              {isCurrentExpired ? (
+                <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-8 text-center">
+                  <Clock className="w-16 h-16 text-red-400 mb-4" />
+                  <h3 className="text-2xl font-bold text-white mb-2">Replay Period Expired</h3>
+                  <p className="text-slate-400 max-w-md text-sm">
+                    This live class recording has exceeded its 30-day retention window and is no longer playable.
+                  </p>
+                </div>
+              ) : (
+                <CustomVideoPlayer 
+                  key={currentVideo.id}
+                  src={getResolvedSrc(currentVideo)}
+                  poster={getResolvedPoster(currentVideo)}
+                  title={currentVideo.title}
+                  autoPlay={false}
+                />
+              )}
+            </div>
+
+            {/* Video Details & Metadata */}
+            <div className="mt-6 p-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#0C3229] mb-3">
+                {currentVideo.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-500 mb-6 pb-6 border-b border-slate-200">
+                <span className="bg-[#B89355]/10 text-[#B89355] px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  Live Class Recording
+                </span>
+
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <Calendar className="w-4 h-4 text-[#B89355]" />
+                  Class Date: {formattedClassDate}
+                </span>
+
+                {isCurrentExpired ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-600/90 text-white">
+                    Expired
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-600/90 text-white flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    {currentVideo.daysRemaining} days left (30-day replay)
+                  </span>
+                )}
+
+                {currentVideo.duration && (
+                  <span className="text-slate-500 font-mono text-xs">
+                    • {currentVideo.duration}
+                  </span>
+                )}
+              </div>
+
+              {currentVideo.description ? (
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                  <h4 className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2">Topics & Notes</h4>
+                  <p className="text-slate-700 whitespace-pre-wrap leading-relaxed text-sm md:text-base">
+                    {currentVideo.description}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Up Next in Recordings Sidebar (Right Column) */}
+          <div className="w-full lg:w-1/3 xl:w-1/4 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-[#0C3229]">Up Next in Recordings</h2>
+              <span className="text-xs font-bold text-[#B89355] bg-[#B89355]/10 px-2.5 py-1 rounded-full">
+                {recordings.length} Total
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3 overflow-y-auto pr-2 pb-8 custom-scrollbar">
+              {recordings.map((rec) => {
+                const isSelected = rec.id === currentVideo.id;
+                const recDate = new Date(rec.recordedDate).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric'
+                });
+
+                return (
+                  <div
+                    key={rec.id}
+                    onClick={() => handleSelectVideo(rec)}
+                    className={`flex gap-3 p-2.5 rounded-xl transition-all cursor-pointer group border ${
+                      isSelected
+                        ? 'bg-[#B89355]/10 border-[#B89355] shadow-sm'
+                        : 'hover:bg-slate-50 border-slate-200/70 hover:border-slate-300'
+                    }`}
+                  >
+                    {/* Thumbnail Box */}
+                    <div className="w-36 min-w-[144px] h-20 bg-slate-900 rounded-lg overflow-hidden relative border border-slate-200 flex-shrink-0 flex items-center justify-center">
+                      {rec.thumbnailUrl ? (
+                        <LazyLoad once>
+                          <img 
+                            src={getResolvedPoster(rec)} 
+                            alt={rec.title}
+                            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                          />
+                        </LazyLoad>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-900 to-indigo-950 flex flex-col items-center justify-center text-center p-1">
+                          <Film className="w-6 h-6 text-amber-500/80 mb-0.5" />
+                          <span className="text-[9px] text-slate-400 uppercase font-semibold">Live Class</span>
+                        </div>
+                      )}
+
+                      {/* Play Icon Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                        <div className="w-8 h-8 rounded-full bg-[#c19b52] flex items-center justify-center shadow-md">
+                          <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                        </div>
+                      </div>
+
+                      {/* Duration Pill */}
+                      {rec.duration && (
+                        <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                          {rec.duration}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="flex flex-col justify-center py-0.5 min-w-0">
+                      <h4 className={`font-bold text-sm leading-snug line-clamp-2 transition-colors ${
+                        isSelected ? 'text-[#0C3229]' : 'text-slate-800 group-hover:text-[#B89355]'
+                      }`}>
+                        {rec.title}
+                      </h4>
+
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                        <Calendar className="w-3 h-3 text-[#B89355]" />
+                        <span>{recDate}</span>
+                      </div>
+
+                      <div className="mt-1">
+                        {rec.isExpired ? (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md">
+                            Expired
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {rec.daysRemaining}d left
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // VIEW MODE 2: CLASS RECORDINGS CATALOG GRID (With Search & Filter)
+  // =========================================================================
   return (
     <div className="min-h-screen font-sans selection:bg-[#c19b52]/30 pb-20">
       
@@ -91,7 +339,7 @@ const LiveClassRecorded = () => {
           <div className="flex items-center gap-2 w-full md:w-auto">
             <button
               onClick={() => setFilterType('active')}
-              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-sm font-semibold transition ${
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
                 filterType === 'active'
                   ? 'bg-gradient-to-r from-[#B89355] to-[#c19b52] text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -101,7 +349,7 @@ const LiveClassRecorded = () => {
             </button>
             <button
               onClick={() => setFilterType('all')}
-              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-sm font-semibold transition ${
+              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
                 filterType === 'all'
                   ? 'bg-gradient-to-r from-[#B89355] to-[#c19b52] text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -141,7 +389,7 @@ const LiveClassRecorded = () => {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition"
+                className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition cursor-pointer"
               >
                 Clear Search
               </button>
@@ -160,21 +408,17 @@ const LiveClassRecorded = () => {
               return (
                 <div 
                   key={rec.id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col group"
+                  className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col group cursor-pointer"
                   data-aos="fade-up"
                   data-aos-delay={idx * 80}
+                  onClick={() => handleSelectVideo(rec)}
                 >
                   {/* Thumbnail / Video Preview */}
-                  <div 
-                    className="aspect-video relative overflow-hidden bg-slate-950 cursor-pointer flex items-center justify-center"
-                    onClick={() => {
-                      if (!isExpired) setSelectedVideo(rec);
-                    }}
-                  >
+                  <div className="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center">
                     {rec.thumbnailUrl ? (
                       <LazyLoad once>
                         <img 
-                          src={rec.thumbnailUrl?.startsWith('http') ? rec.thumbnailUrl : `${config.API_BASE_URL}${rec.thumbnailUrl}`} 
+                          src={getResolvedPoster(rec)} 
                           alt={rec.title} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
                         />
@@ -244,12 +488,9 @@ const LiveClassRecorded = () => {
                           Replay expired
                         </span>
                       ) : (
-                        <button
-                          onClick={() => setSelectedVideo(rec)}
-                          className="text-sm font-bold text-[#0C3229] flex items-center gap-1.5 hover:text-[#B89355] transition-colors group/btn"
-                        >
-                          Watch Class <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </button>
+                        <span className="text-sm font-bold text-[#0C3229] flex items-center gap-1.5 group-hover:text-[#B89355] transition-colors">
+                          Watch Class <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </span>
                       )}
                     </div>
                   </div>
@@ -259,22 +500,8 @@ const LiveClassRecorded = () => {
           </div>
         )}
       </main>
-
-      {/* Video Modal Player */}
-      {selectedVideo && (
-        <VideoModal
-          isOpen={!!selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-          video={{
-            ...selectedVideo,
-            video_url: selectedVideo.videoUrl,
-            thumbnail_url: selectedVideo.thumbnailUrl
-          }}
-        />
-      )}
     </div>
   );
 };
 
 export default LiveClassRecorded;
-
