@@ -658,7 +658,7 @@ const LiveClassManager = () => {
                       onChange={() => setRecordingSource('file')}
                       className="accent-amber-500"
                     />
-                    Upload Video File (MP4/WebM)
+                    Upload Video File (MP4/WebM, up to 1GB)
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
                     <input 
@@ -674,13 +674,16 @@ const LiveClassManager = () => {
                 </div>
 
                 {recordingSource === 'file' ? (
-                  <input 
-                    type="file" 
-                    accept="video/*" 
-                    onChange={(e) => setVideoFile(e.target.files[0])}
-                    required
-                    className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer bg-slate-800/50 p-2 rounded-xl border border-indigo-900/50"
-                  />
+                  <div>
+                    <input 
+                      type="file" 
+                      accept="video/*" 
+                      onChange={(e) => setVideoFile(e.target.files[0])}
+                      required
+                      className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer bg-slate-800/50 p-2 rounded-xl border border-indigo-900/50"
+                    />
+                    <span className="text-xs text-slate-400 mt-1 block">Max file size: 1 GB. Ensure your recording file is completely finished saving before uploading.</span>
+                  </div>
                 ) : (
                   <input 
                     type="url" 

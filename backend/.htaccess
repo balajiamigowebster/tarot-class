@@ -1,23 +1,26 @@
-# Increase upload limit to 500MB for Apache
-LimitRequestBody 524288000
+# Increase upload limit to 1GB for Apache / LiteSpeed
+LimitRequestBody 1073741824
 
 <IfModule lsapi_module>
-   php_value upload_max_filesize 500M
-   php_value post_max_size 500M
-   php_value max_execution_time 600
-   php_value max_input_time 600
+   php_value upload_max_filesize 1024M
+   php_value post_max_size 1024M
+   php_value max_execution_time 1800
+   php_value max_input_time 1800
+   php_value memory_limit 1024M
 </IfModule>
 
 <IfModule mod_php.c>
-   php_value upload_max_filesize 500M
-   php_value post_max_size 500M
-   php_value max_execution_time 600
-   php_value max_input_time 600
+   php_value upload_max_filesize 1024M
+   php_value post_max_size 1024M
+   php_value max_execution_time 1800
+   php_value max_input_time 1800
+   php_value memory_limit 1024M
 </IfModule>
 
 <IfModule mod_php7.c>
-   php_value upload_max_filesize 500M
-   php_value post_max_size 500M
-   php_value max_execution_time 600
-   php_value max_input_time 600
+   php_value upload_max_filesize 1024M
+   php_value post_max_size 1024M
+   php_value max_execution_time 1800
+   php_value max_input_time 1800
+   php_value memory_limit 1024M
 </IfModule>

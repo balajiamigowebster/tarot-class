@@ -297,10 +297,20 @@ router.get('/recordings', async (req, res) => {
 });
 
 // Add a live class recording (via file upload or video link)
-router.post('/recordings', recordingUpload.fields([
-  { name: 'video', maxCount: 1 },
-  { name: 'thumbnail', maxCount: 1 }
-]), async (req, res) => {
+router.post('/recordings', (req, res, next) => {
+  recordingUpload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 }
+  ])(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Video file exceeds the 1 GB maximum upload limit. Please compress or trim the video.' });
+      }
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const {
       title,
@@ -321,7 +331,17 @@ router.post('/recordings', recordingUpload.fields([
 
     if (req.files) {
       if (req.files.video && req.files.video.length > 0) {
-        videoUrl = `/api/uploads/recordings/${req.files.video[0].filename}`;
+        const videoFile = req.files.video[0];
+        // Check for empty 0-byte file
+        if (videoFile.size === 0) {
+          if (fs.existsSync(videoFile.path)) {
+            try { fs.unlinkSync(videoFile.path); } catch (e) {}
+          }
+          return res.status(400).json({ 
+            error: 'The uploaded video file is empty (0 bytes). Please make sure the recording file is saved properly before uploading.' 
+          });
+        }
+        videoUrl = `/api/uploads/recordings/${videoFile.filename}`;
       }
       if (req.files.thumbnail && req.files.thumbnail.length > 0) {
         thumbnailUrl = `/api/uploads/recordings/${req.files.thumbnail[0].filename}`;
@@ -361,6 +381,44 @@ router.post('/recordings', recordingUpload.fields([
   } catch (error) {
     console.error('Error creating recording:', error);
     res.status(500).json({ error: error.message || 'Failed to save recording' });
+  }
+});
+
+// Update a live class recording metadata / URL
+router.put('/recordings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const recording = await LiveClassRecording.findByPk(id);
+    if (!recording) {
+      return res.status(404).json({ error: 'Recording not found' });
+    }
+
+    const { title, description, duration, recordedDate, validityDays, videoUrl } = req.body;
+    if (title !== undefined) recording.title = title;
+    if (description !== undefined) recording.description = description;
+    if (duration !== undefined) recording.duration = duration;
+    if (videoUrl !== undefined) recording.videoUrl = videoUrl;
+    if (recordedDate !== undefined) recording.recordedDate = recordedDate;
+
+    if (validityDays !== undefined || recordedDate !== undefined) {
+      const days = parseInt(validityDays, 10) || 30;
+      const baseDate = recordedDate || recording.recordedDate;
+      const expDateObj = new Date(baseDate);
+      expDateObj.setDate(expDateObj.getDate() + days);
+      recording.expiryDate = expDateObj.toISOString().split('T')[0];
+    }
+
+    await recording.save();
+
+    const plain = recording.toJSON();
+    const expiryInfo = calculateRecordingExpiry(plain);
+    plain.daysRemaining = expiryInfo.daysRemaining;
+    plain.isExpired = expiryInfo.isExpired;
+
+    res.json(plain);
+  } catch (error) {
+    console.error('Error updating recording:', error);
+    res.status(500).json({ error: error.message || 'Failed to update recording' });
   }
 });
 

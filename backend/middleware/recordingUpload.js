@@ -11,15 +11,16 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const cleanName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
-    cb(null, `recording-${Date.now()}-${Math.round(Math.random() * 1E6)}${path.extname(cleanName)}`);
+    const cleanName = file.originalname ? file.originalname.replace(/[^a-zA-Z0-9.]/g, '_') : '';
+    const ext = path.extname(cleanName) || (file.mimetype === 'video/webm' ? '.webm' : '.mp4');
+    cb(null, `recording-${Date.now()}-${Math.round(Math.random() * 1E6)}${ext}`);
   }
 });
 
 const recordingUpload = multer({
   storage,
   limits: {
-    fileSize: 500 * 1024 * 1024 // 500 MB max for video recordings
+    fileSize: 1024 * 1024 * 1024 // 1 GB (1024 MB) max for video recordings
   }
 });
 
