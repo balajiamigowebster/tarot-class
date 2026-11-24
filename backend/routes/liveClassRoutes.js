@@ -304,7 +304,7 @@ router.post('/recordings', (req, res, next) => {
   ])(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'Video file exceeds the 1 GB maximum upload limit. Please compress or trim the video.' });
+        return res.status(400).json({ error: 'Video file exceeds the 1.5 GB maximum upload limit. Please compress or trim the video.' });
       }
       return res.status(400).json({ error: err.message || 'File upload failed' });
     }

@@ -197,6 +197,9 @@ const LiveClassManager = () => {
 
       const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 0, // No client timeout for 1GB+ uploads
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -689,9 +692,9 @@ const LiveClassManager = () => {
                       onChange={(e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const oneGB = 1024 * 1024 * 1024;
-                          if (file.size > oneGB) {
-                            alert(`File exceeds the 1 GB maximum limit (${(file.size / (1024 * 1024)).toFixed(1)} MB). Please compress the video to 720p or 1080p before uploading.`);
+                          const maxLimit = 1536 * 1024 * 1024; // 1.5 GB
+                          if (file.size > maxLimit) {
+                            alert(`File exceeds the 1.5 GB maximum limit (${(file.size / (1024 * 1024)).toFixed(1)} MB). Please trim or compress the video before uploading.`);
                             e.target.value = '';
                             setVideoFile(null);
                             return;
@@ -712,12 +715,12 @@ const LiveClassManager = () => {
                       <div className="mt-2 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-lg flex items-start gap-2">
                         <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
                         <span>
-                          <strong>Large video detected ({(videoFile.size / (1024 * 1024)).toFixed(0)} MB):</strong> High-bitrate 4K files take a long time to upload and can cause web hosting timeouts. For fast, instant playback for students, standard 720p/1080p MP4 (under 300MB) or an <strong>External Link</strong> (YouTube Unlisted / Google Drive) is recommended.
+                          <strong>Large video ({(videoFile.size / (1024 * 1024)).toFixed(0)} MB):</strong> Uploading large videos over 500MB requires a stable high-speed connection and will take several minutes to reach 100%. Please keep this browser window open until complete.
                         </span>
                       </div>
                     )}
                     <span className="text-xs text-slate-400 mt-1.5 block">
-                      Max file size: 1 GB. For smooth student streaming, standard 720p or 1080p MP4 is recommended.
+                      Max file size: Up to 1.5 GB supported. Please keep the window open while uploading.
                     </span>
                   </div>
                 ) : (

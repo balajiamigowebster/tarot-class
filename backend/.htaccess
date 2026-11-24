@@ -1,5 +1,10 @@
-# Increase upload limit to 1GB for Apache / LiteSpeed
-LimitRequestBody 1073741824
+# Unlimited upload body for Apache & LiteSpeed
+LimitRequestBody 0
+
+# Prevent LiteSpeed from aborting or timing out large video uploads
+RewriteEngine On
+RewriteRule .* - [E=noabort:1]
+RewriteRule .* - [E=noconntimeout:1]
 
 <IfModule mod_headers.c>
     Header always set Access-Control-Allow-Origin "*"
@@ -9,30 +14,29 @@ LimitRequestBody 1073741824
 </IfModule>
 
 # Handle OPTIONS preflight immediately
-RewriteEngine On
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ $1 [R=200,L]
 
 <IfModule lsapi_module>
-   php_value upload_max_filesize 1024M
-   php_value post_max_size 1024M
-   php_value max_execution_time 1800
-   php_value max_input_time 1800
-   php_value memory_limit 1024M
+   php_value upload_max_filesize 2048M
+   php_value post_max_size 2048M
+   php_value max_execution_time 7200
+   php_value max_input_time 7200
+   php_value memory_limit 2048M
 </IfModule>
 
 <IfModule mod_php.c>
-   php_value upload_max_filesize 1024M
-   php_value post_max_size 1024M
-   php_value max_execution_time 1800
-   php_value max_input_time 1800
-   php_value memory_limit 1024M
+   php_value upload_max_filesize 2048M
+   php_value post_max_size 2048M
+   php_value max_execution_time 7200
+   php_value max_input_time 7200
+   php_value memory_limit 2048M
 </IfModule>
 
 <IfModule mod_php7.c>
-   php_value upload_max_filesize 1024M
-   php_value post_max_size 1024M
-   php_value max_execution_time 1800
-   php_value max_input_time 1800
-   php_value memory_limit 1024M
+   php_value upload_max_filesize 2048M
+   php_value post_max_size 2048M
+   php_value max_execution_time 7200
+   php_value max_input_time 7200
+   php_value memory_limit 2048M
 </IfModule>

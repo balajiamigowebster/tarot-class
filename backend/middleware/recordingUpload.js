@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 const recordingUpload = multer({
   storage,
   limits: {
-    fileSize: 1024 * 1024 * 1024 // 1 GB (1024 MB) max for video recordings
+    fileSize: 1536 * 1024 * 1024 // 1.5 GB (1536 MB) max for video recordings
   }
 });
 

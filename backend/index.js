@@ -84,14 +84,25 @@ const streamVideoFile = (requestedPath, req, res) => {
   const range = req.headers.range;
   const contentType = ext === '.webm' ? 'video/webm' : 'video/mp4';
 
+  if (fileSize === 0) {
+    res.setHeader('Content-Length', '0');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    return res.status(200).send();
+  }
+
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
-    if (start >= fileSize) {
-      res.status(416).send(`Requested range not satisfiable\n${start} >= ${fileSize}`);
-      return;
+    if (isNaN(start) || start >= fileSize) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).send(`Requested range not satisfiable\n${start} >= ${fileSize}`);
+    }
+
+    if (end >= fileSize) {
+      end = fileSize - 1;
     }
 
     const chunksize = (end - start) + 1;
@@ -302,8 +313,13 @@ const syncAndSeed = async () => {
   }
 };
 
-// Start Server
-app.listen(PORT, async () => {
+// Start Server with extended timeouts for large 1GB+ video uploads
+const server = app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   await syncAndSeed();
 });
+
+server.timeout = 7200000; // 2 hours
+server.keepAliveTimeout = 7200000;
+server.headersTimeout = 7205000;
+server.requestTimeout = 7200000;
