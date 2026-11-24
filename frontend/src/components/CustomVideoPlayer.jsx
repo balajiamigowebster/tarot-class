@@ -122,17 +122,32 @@ const CustomVideoPlayer = ({
     }
   };
 
+  // Reset player state whenever a new video source is selected
+  useEffect(() => {
+    setIsPlaying(false);
+    setIsBuffering(false);
+    setCurrentTime(0);
+    setShowControls(true);
+  }, [src]);
+
   // Toggle play/pause
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (video.paused || video.ended) {
-      video.play().catch(() => {
-        // Autoplay or play was blocked
+      video.play().then(() => {
+        setIsPlaying(true);
+        setIsBuffering(false);
+      }).catch((err) => {
+        console.warn('Play prevented or pending user gesture:', err);
+        setIsPlaying(false);
+        setIsBuffering(false);
       });
     } else {
       video.pause();
+      setIsPlaying(false);
+      setIsBuffering(false);
     }
   }, []);
 
@@ -415,8 +430,8 @@ const CustomVideoPlayer = ({
         Your browser does not support the video tag.
       </video>
 
-      {/* Buffering Spinner */}
-      {isBuffering && (
+      {/* Buffering Spinner (Only shown when active playback is stalled waiting for data) */}
+      {isBuffering && isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
           <div className="p-4 rounded-full bg-black/60 backdrop-blur-md text-[#B89355] border border-white/10 shadow-2xl">
             <Loader2 className="w-10 h-10 animate-spin" />
@@ -424,8 +439,8 @@ const CustomVideoPlayer = ({
         </div>
       )}
 
-      {/* Big Center Play Button (Visible when paused or ended) */}
-      {!isPlaying && !isBuffering && (
+      {/* Big Center Play Button (Visible whenever paused or ended) */}
+      {!isPlaying && (
         <div 
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center cursor-pointer z-20 group/btn bg-black/20 hover:bg-black/30 transition-all"

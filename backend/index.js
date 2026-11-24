@@ -82,7 +82,30 @@ const streamVideoFile = (requestedPath, req, res) => {
   const stat = fs.statSync(resolvedPath);
   const fileSize = stat.size;
   const range = req.headers.range;
-  const contentType = ext === '.webm' ? 'video/webm' : 'video/mp4';
+  
+  // Reliably detect video container & MIME type (supports .mp4, .webm, and extensionless files)
+  let contentType = 'video/mp4';
+  if (ext === '.webm') {
+    contentType = 'video/webm';
+  } else if (ext === '.mp4') {
+    contentType = 'video/mp4';
+  } else {
+    try {
+      const fd = fs.openSync(resolvedPath, 'r');
+      const headerBuf = Buffer.alloc(128);
+      fs.readSync(fd, headerBuf, 0, 128, 0);
+      fs.closeSync(fd);
+      // WebM EBML signature (0x1A 0x45 0xDF 0xA3) or ASCII "webm"
+      if ((headerBuf[0] === 0x1a && headerBuf[1] === 0x45 && headerBuf[2] === 0xdf && headerBuf[3] === 0xa3) ||
+          headerBuf.toString('utf8', 0, 128).includes('webm')) {
+        contentType = 'video/webm';
+      } else {
+        contentType = 'video/mp4';
+      }
+    } catch (e) {
+      contentType = 'video/mp4';
+    }
+  }
 
   // Always set universal CORS headers directly
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
