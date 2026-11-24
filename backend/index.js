@@ -84,6 +84,13 @@ const streamVideoFile = (requestedPath, req, res) => {
   const range = req.headers.range;
   const contentType = ext === '.webm' ? 'video/webm' : 'video/mp4';
 
+  // Always set universal CORS headers directly
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Range, Authorization');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+
   if (fileSize === 0) {
     res.setHeader('Content-Length', '0');
     res.setHeader('Content-Type', contentType);
@@ -91,10 +98,23 @@ const streamVideoFile = (requestedPath, req, res) => {
     return res.status(200).send();
   }
 
+  // Handle HEAD requests gracefully without triggering LiteSpeed proxy buffer limit
+  if (req.method === 'HEAD') {
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Content-Length', fileSize);
+    return res.status(200).end();
+  }
+
+  // For video streaming, ALWAYS use 206 Partial Content in safe chunks (max 10MB per burst)
+  // This guarantees LiteSpeed never encounters an 800MB+ monolithic response and never throws 413
+  let start = 0;
+  let end = fileSize - 1;
+
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    let end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    start = parseInt(parts[0], 10);
+    end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
 
     if (isNaN(start) || start >= fileSize) {
       res.setHeader('Content-Range', `bytes */${fileSize}`);
@@ -104,43 +124,55 @@ const streamVideoFile = (requestedPath, req, res) => {
     if (end >= fileSize) {
       end = fileSize - 1;
     }
-
-    const chunksize = (end - start) + 1;
-    const file = fs.createReadStream(resolvedPath, { start, end });
-    const head = {
-      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize,
-      'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=86400',
-      'Access-Control-Allow-Origin': req.headers.origin || '*',
-      'Access-Control-Allow-Credentials': 'true'
-    };
-
-    res.writeHead(206, head);
-    file.pipe(res);
   } else {
-    const head = {
-      'Content-Length': fileSize,
-      'Content-Type': contentType,
-      'Accept-Ranges': 'bytes',
-      'Cache-Control': 'public, max-age=86400',
-      'Access-Control-Allow-Origin': req.headers.origin || '*',
-      'Access-Control-Allow-Credentials': 'true'
-    };
-    res.writeHead(200, head);
-    fs.createReadStream(resolvedPath).pipe(res);
+    // If client sends no Range header (initial probe), send the initial 2MB chunk
+    // This allows browser to read video metadata (moov atom) immediately without server buffer overflow
+    const INITIAL_CHUNK = 2 * 1024 * 1024;
+    end = Math.min(fileSize - 1, INITIAL_CHUNK - 1);
   }
+
+  // Cap chunk size to maximum 10MB to guarantee instant start and zero proxy buffer drops
+  const MAX_CHUNK = 10 * 1024 * 1024;
+  if ((end - start) + 1 > MAX_CHUNK) {
+    end = start + MAX_CHUNK - 1;
+  }
+
+  const chunksize = (end - start) + 1;
+  const file = fs.createReadStream(resolvedPath, { start, end });
+  
+  res.writeHead(206, {
+    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+    'Accept-Ranges': 'bytes',
+    'Content-Length': chunksize,
+    'Content-Type': contentType,
+    'Cache-Control': 'public, max-age=86400'
+  });
+
+  file.pipe(res);
 };
 
 // High-speed Range-streaming for Live Recordings
-app.get('/api/uploads/recordings/:filename', (req, res) => {
+app.all('/api/uploads/recordings/:filename', (req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Range, Authorization');
+    return res.status(200).end();
+  }
   const filePath = path.join(__dirname, 'uploads', 'recordings', req.params.filename);
   streamVideoFile(filePath, req, res);
 });
 
 // High-speed Range-streaming for Syllabus Videos
-app.get('/api/uploads/syllabus/:category/:filename', (req, res) => {
+app.all('/api/uploads/syllabus/:category/:filename', (req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Range, Authorization');
+    return res.status(200).end();
+  }
   const filePath = path.join(__dirname, 'uploads', 'syllabus', req.params.category, req.params.filename);
   streamVideoFile(filePath, req, res);
 });

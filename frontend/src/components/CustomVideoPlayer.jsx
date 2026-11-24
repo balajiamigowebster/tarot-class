@@ -393,7 +393,6 @@ const CustomVideoPlayer = ({
         playsInline
         webkit-playsinline="true"
         preload="auto"
-        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onLoadedData={() => setIsBuffering(false)}
