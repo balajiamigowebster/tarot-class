@@ -13,7 +13,9 @@ const multer = require('multer');
 // Specialized Chunk Storage for 1 GB+ Large Video Uploads (5MB chunks bypass web-server request caps)
 const chunkStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadId = (req.body.uploadId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '');
+    // Read uploadId from query first (immune to multipart field order) or body fallback
+    const rawId = req.query.uploadId || req.body.uploadId || 'temp';
+    const uploadId = String(rawId).replace(/[^a-zA-Z0-9_-]/g, '');
     const tempDir = path.join(__dirname, '..', 'uploads', 'temp_chunks', uploadId);
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -25,7 +27,9 @@ const chunkStorage = multer.diskStorage({
       const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
       cb(null, `thumb${ext}`);
     } else {
-      const idx = req.body.chunkIndex !== undefined ? req.body.chunkIndex : '0';
+      // Read chunkIndex from query first or body fallback
+      const rawIdx = req.query.chunkIndex !== undefined ? req.query.chunkIndex : req.body.chunkIndex;
+      const idx = (rawIdx !== undefined && rawIdx !== null) ? String(rawIdx) : '0';
       cb(null, `${idx}.part`);
     }
   }
@@ -330,16 +334,20 @@ router.post('/recordings/chunk', chunkUpload.fields([
   { name: 'chunk', maxCount: 1 },
   { name: 'thumbnail', maxCount: 1 }
 ]), async (req, res) => {
+  let finalFilePath = null;
   try {
-    const { uploadId, chunkIndex, totalChunks, fileName } = req.body;
+    const rawUploadId = req.query.uploadId || req.body.uploadId;
+    const rawChunkIndex = req.query.chunkIndex !== undefined ? req.query.chunkIndex : req.body.chunkIndex;
+    const rawTotalChunks = req.query.totalChunks || req.body.totalChunks;
+    const rawFileName = req.query.fileName || req.body.fileName;
     
-    if (!uploadId || chunkIndex === undefined || !totalChunks) {
-      return res.status(400).json({ error: 'Missing chunk upload parameters' });
+    if (!rawUploadId || rawChunkIndex === undefined || !rawTotalChunks) {
+      return res.status(400).json({ error: 'Missing chunk upload parameters (uploadId, chunkIndex, totalChunks)' });
     }
 
-    const currentIdx = parseInt(chunkIndex, 10);
-    const total = parseInt(totalChunks, 10);
-    const safeUploadId = uploadId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const currentIdx = parseInt(rawChunkIndex, 10);
+    const total = parseInt(rawTotalChunks, 10);
+    const safeUploadId = String(rawUploadId).replace(/[^a-zA-Z0-9_-]/g, '');
     const tempDir = path.join(__dirname, '..', 'uploads', 'temp_chunks', safeUploadId);
 
     // If this is NOT the final chunk, acknowledge receipt immediately
@@ -361,7 +369,7 @@ router.post('/recordings/chunk', chunkUpload.fields([
       return res.status(400).json({ error: 'Title is required for recording' });
     }
 
-    const cleanBase = fileName ? fileName.replace(/[^a-zA-Z0-9.]/g, '_') : 'class_recording';
+    const cleanBase = rawFileName ? String(rawFileName).replace(/[^a-zA-Z0-9.]/g, '_') : 'class_recording';
     let ext = path.extname(cleanBase).toLowerCase();
     if (!ext || ext.length < 2) ext = '.mp4';
     
@@ -370,7 +378,7 @@ router.post('/recordings/chunk', chunkUpload.fields([
     if (!fs.existsSync(recordingsDir)) {
       fs.mkdirSync(recordingsDir, { recursive: true });
     }
-    const finalFilePath = path.join(recordingsDir, finalFileName);
+    finalFilePath = path.join(recordingsDir, finalFileName);
 
     // Statically merge chunk files
     const writeStream = fs.createWriteStream(finalFilePath);
@@ -433,6 +441,9 @@ router.post('/recordings/chunk', chunkUpload.fields([
 
     res.status(201).json(plain);
   } catch (error) {
+    if (finalFilePath && fs.existsSync(finalFilePath)) {
+      try { fs.unlinkSync(finalFilePath); } catch (e) {}
+    }
     console.error('Error processing chunked upload:', error);
     res.status(500).json({ error: error.message || 'Chunked upload assembly failed' });
   }

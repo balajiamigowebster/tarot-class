@@ -213,13 +213,13 @@ const LiveClassManager = () => {
         const chunkBlob = videoFile.slice(start, end);
 
         const chunkFormData = new FormData();
-        chunkFormData.append('chunk', chunkBlob, 'part');
+        // IMPORTANT: Append text metadata FIRST so Multer parses body variables before file streams
         chunkFormData.append('uploadId', uploadId);
-        chunkFormData.append('chunkIndex', chunkIndex);
-        chunkFormData.append('totalChunks', totalChunks);
+        chunkFormData.append('chunkIndex', String(chunkIndex));
+        chunkFormData.append('totalChunks', String(totalChunks));
         chunkFormData.append('fileName', videoFile.name);
 
-        // Attach metadata and optional thumbnail with the final chunk
+        // Attach recording metadata and optional thumbnail with the final chunk
         if (chunkIndex === totalChunks - 1) {
           chunkFormData.append('title', recordingForm.title);
           chunkFormData.append('description', recordingForm.description || '');
@@ -234,10 +234,35 @@ const LiveClassManager = () => {
           }
         }
 
-        await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings/chunk`, chunkFormData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 120000
-        });
+        // File stream is appended after text fields
+        chunkFormData.append('chunk', chunkBlob, `part_${chunkIndex}.part`);
+
+        // Send parameters via query params as well to guarantee 100% field availability in Multer diskStorage
+        const chunkUrl = `${config.API_BASE_URL}/api/live-classes/recordings/chunk?uploadId=${encodeURIComponent(uploadId)}&chunkIndex=${chunkIndex}&totalChunks=${totalChunks}&fileName=${encodeURIComponent(videoFile.name)}`;
+
+        // Resilient auto-retry up to 3 times per chunk for large uploads
+        let uploaded = false;
+        let lastErr = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            await axios.post(chunkUrl, chunkFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 120000
+            });
+            uploaded = true;
+            break;
+          } catch (err) {
+            lastErr = err;
+            console.warn(`Chunk ${chunkIndex + 1}/${totalChunks} attempt ${attempt} failed:`, err);
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 1000 * attempt));
+            }
+          }
+        }
+
+        if (!uploaded) {
+          throw lastErr || new Error(`Failed to upload chunk ${chunkIndex + 1} after 3 attempts`);
+        }
 
         const percent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
         setUploadProgress(percent);
