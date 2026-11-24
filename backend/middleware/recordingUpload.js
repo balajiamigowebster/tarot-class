@@ -12,7 +12,14 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const cleanName = file.originalname ? file.originalname.replace(/[^a-zA-Z0-9.]/g, '_') : '';
-    const ext = path.extname(cleanName) || (file.mimetype === 'video/webm' ? '.webm' : '.mp4');
+    let ext = path.extname(cleanName).toLowerCase();
+    if (!ext) {
+      if (file.mimetype === 'video/webm') ext = '.webm';
+      else if (file.mimetype === 'image/jpeg') ext = '.jpg';
+      else if (file.mimetype === 'image/png') ext = '.png';
+      else if (file.mimetype?.startsWith('image/')) ext = '.jpg';
+      else ext = '.mp4';
+    }
     cb(null, `recording-${Date.now()}-${Math.round(Math.random() * 1E6)}${ext}`);
   }
 });

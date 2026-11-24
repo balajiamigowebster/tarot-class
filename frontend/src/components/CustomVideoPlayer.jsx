@@ -37,6 +37,50 @@ const CustomVideoPlayer = ({
   const progressRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
 
+  // Helper to detect external video services (YouTube, Google Drive, Vimeo)
+  const getEmbedInfo = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    const cleanUrl = url.trim();
+
+    // YouTube
+    const ytMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch) {
+      return { type: 'youtube', embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` };
+    }
+
+    // Google Drive Preview
+    if (cleanUrl.includes('drive.google.com/file/d/')) {
+      const driveMatch = cleanUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (driveMatch) {
+        return { type: 'gdrive', embedUrl: `https://drive.google.com/file/d/${driveMatch[1]}/preview` };
+      }
+    }
+
+    // Vimeo
+    const vimeoMatch = cleanUrl.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) {
+      return { type: 'vimeo', embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1` };
+    }
+
+    return null;
+  };
+
+  const embedInfo = getEmbedInfo(src);
+
+  if (embedInfo) {
+    return (
+      <div className={`relative w-full h-full bg-black rounded-xl overflow-hidden shadow-2xl ${className}`}>
+        <iframe
+          src={embedInfo.embedUrl}
+          title={title || "Video Player"}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -348,15 +392,20 @@ const CustomVideoPlayer = ({
         poster={poster}
         playsInline
         webkit-playsinline="true"
-        preload="metadata"
+        preload="auto"
+        crossOrigin="anonymous"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onLoadedData={() => setIsBuffering(false)}
+        onCanPlay={() => setIsBuffering(false)}
+        onCanPlayThrough={() => setIsBuffering(false)}
         onPlay={handlePlay}
         onPause={handlePause}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
         onSeeking={() => setIsBuffering(true)}
         onSeeked={() => setIsBuffering(false)}
+        onError={() => setIsBuffering(false)}
         onEnded={handleVideoEnded}
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}

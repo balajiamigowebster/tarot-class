@@ -1,6 +1,18 @@
 # Increase upload limit to 1GB for Apache / LiteSpeed
 LimitRequestBody 1073741824
 
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Range"
+    Header always set Access-Control-Expose-Headers "Content-Range, Accept-Ranges, Content-Length"
+</IfModule>
+
+# Handle OPTIONS preflight immediately
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
 <IfModule lsapi_module>
    php_value upload_max_filesize 1024M
    php_value post_max_size 1024M

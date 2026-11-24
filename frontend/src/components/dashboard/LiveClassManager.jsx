@@ -220,8 +220,16 @@ const LiveClassManager = () => {
       setThumbnailFile(null);
       await fetchRecordings();
     } catch (err) {
-      console.error(err);
-      setRecordingError(err.response?.data?.error || err.message || 'Failed to save recording');
+      console.error('Upload Error:', err);
+      let errorMsg = err.response?.data?.error || err.response?.data?.message;
+      if (!errorMsg) {
+        if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+          errorMsg = 'Network Error: The upload timed out or connection was reset by the server. Large 4K videos often exceed hosting limits. Please compress your video to 720p/1080p MP4 (under 300MB) or use the "External Video Link" option (YouTube Unlisted / Google Drive).';
+        } else {
+          errorMsg = err.message || 'Failed to upload live class recording';
+        }
+      }
+      setRecordingError(errorMsg);
     } finally {
       setLoadingRecordings(false);
       setTimeout(() => {
@@ -678,21 +686,54 @@ const LiveClassManager = () => {
                     <input 
                       type="file" 
                       accept="video/*" 
-                      onChange={(e) => setVideoFile(e.target.files[0])}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const oneGB = 1024 * 1024 * 1024;
+                          if (file.size > oneGB) {
+                            alert(`File exceeds the 1 GB maximum limit (${(file.size / (1024 * 1024)).toFixed(1)} MB). Please compress the video to 720p or 1080p before uploading.`);
+                            e.target.value = '';
+                            setVideoFile(null);
+                            return;
+                          }
+                          setVideoFile(file);
+                        }
+                      }}
                       required
                       className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-400 cursor-pointer bg-slate-800/50 p-2 rounded-xl border border-indigo-900/50"
                     />
-                    <span className="text-xs text-slate-400 mt-1 block">Max file size: 1 GB. Ensure your recording file is completely finished saving before uploading.</span>
+                    {videoFile && (
+                      <div className="mt-2 text-xs text-slate-300 flex items-center justify-between">
+                        <span>Selected file: <strong>{videoFile.name}</strong></span>
+                        <span className="text-amber-400 font-bold">{(videoFile.size / (1024 * 1024)).toFixed(1)} MB</span>
+                      </div>
+                    )}
+                    {videoFile && videoFile.size > 350 * 1024 * 1024 && (
+                      <div className="mt-2 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 p-2.5 rounded-lg flex items-start gap-2">
+                        <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400" />
+                        <span>
+                          <strong>Large video detected ({(videoFile.size / (1024 * 1024)).toFixed(0)} MB):</strong> High-bitrate 4K files take a long time to upload and can cause web hosting timeouts. For fast, instant playback for students, standard 720p/1080p MP4 (under 300MB) or an <strong>External Link</strong> (YouTube Unlisted / Google Drive) is recommended.
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-xs text-slate-400 mt-1.5 block">
+                      Max file size: 1 GB. For smooth student streaming, standard 720p or 1080p MP4 is recommended.
+                    </span>
                   </div>
                 ) : (
-                  <input 
-                    type="url" 
-                    placeholder="https://... (Direct MP4, Cloud URL, or streaming link)"
-                    value={recordingForm.videoUrl} 
-                    onChange={(e) => setRecordingForm({ ...recordingForm, videoUrl: e.target.value })}
-                    required
-                    className="w-full rounded-xl bg-slate-800 border-indigo-900/50 text-white p-3 border focus:ring-amber-500 focus:border-amber-500"
-                  />
+                  <div>
+                    <input 
+                      type="url" 
+                      placeholder="e.g. YouTube link, Google Drive link, or direct MP4 URL"
+                      value={recordingForm.videoUrl} 
+                      onChange={(e) => setRecordingForm({ ...recordingForm, videoUrl: e.target.value })}
+                      required
+                      className="w-full rounded-xl bg-slate-800 border-indigo-900/50 text-white p-3 border focus:ring-amber-500 focus:border-amber-500"
+                    />
+                    <span className="text-xs text-slate-400 mt-1.5 block">
+                      Tip: You can paste a <strong>YouTube</strong> link (public or unlisted), <strong>Google Drive</strong> share link, or any direct MP4 URL!
+                    </span>
+                  </div>
                 )}
               </div>
 

@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const sequelize = require('./config/db');
 const Course = require('./models/Course');
 const SyllabusCategory = require('./models/SyllabusCategory');
@@ -29,20 +30,111 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Universal CORS Middleware with preflight handling
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(cors({
-  origin: [
-    'https://tarot-class-lovat.vercel.app',
-    'https://tarotclasses.saratarot.in',
-    'https://www.tarotclasses.saratarot.in',
-    'http://localhost:5173'
-  ],
+  origin: true,
   credentials: true
 }));
-app.use(express.json());
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('dev')); // Logging
 
-// Serve static files (like uploaded videos)
+// Helper for fast, progressive HTTP 206 video range streaming
+const streamVideoFile = (requestedPath, req, res) => {
+  let resolvedPath = requestedPath;
+  
+  if (!fs.existsSync(resolvedPath)) {
+    if (fs.existsSync(resolvedPath + '.mp4')) {
+      resolvedPath = resolvedPath + '.mp4';
+    } else if (fs.existsSync(resolvedPath + '.webm')) {
+      resolvedPath = resolvedPath + '.webm';
+    } else {
+      return res.status(404).json({ error: 'Video file not found on server' });
+    }
+  }
+
+  const ext = path.extname(resolvedPath).toLowerCase();
+  
+  // If it's an image, serve standard static
+  if (['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) {
+    return res.sendFile(resolvedPath);
+  }
+
+  const stat = fs.statSync(resolvedPath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+  const contentType = ext === '.webm' ? 'video/webm' : 'video/mp4';
+
+  if (range) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize) {
+      res.status(416).send(`Requested range not satisfiable\n${start} >= ${fileSize}`);
+      return;
+    }
+
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(resolvedPath, { start, end });
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': req.headers.origin || '*',
+      'Access-Control-Allow-Credentials': 'true'
+    };
+
+    res.writeHead(206, head);
+    file.pipe(res);
+  } else {
+    const head = {
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': req.headers.origin || '*',
+      'Access-Control-Allow-Credentials': 'true'
+    };
+    res.writeHead(200, head);
+    fs.createReadStream(resolvedPath).pipe(res);
+  }
+};
+
+// High-speed Range-streaming for Live Recordings
+app.get('/api/uploads/recordings/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', 'recordings', req.params.filename);
+  streamVideoFile(filePath, req, res);
+});
+
+// High-speed Range-streaming for Syllabus Videos
+app.get('/api/uploads/syllabus/:category/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', 'syllabus', req.params.category, req.params.filename);
+  streamVideoFile(filePath, req, res);
+});
+
+// Serve other static files (images, pdfs)
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health Check Endpoint
@@ -75,6 +167,27 @@ app.use('/api/syllabus', syllabusRoutes);
 app.use('/api/live-classes', liveClassRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/save-student', studentSyncRoutes);
+
+// Global error handling middleware with guaranteed CORS headers
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Range');
+  
+  const status = err.status || (err.code === 'LIMIT_FILE_SIZE' ? 400 : 500);
+  const message = err.code === 'LIMIT_FILE_SIZE' 
+    ? 'File exceeds the maximum upload limit (1 GB). Please compress or trim the video.' 
+    : (err.message || 'Server error occurred');
+    
+  res.status(status).json({ error: message });
+});
 
 // Sync and Seed Database
 const syncAndSeed = async () => {
