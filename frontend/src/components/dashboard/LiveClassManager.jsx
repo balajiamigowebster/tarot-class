@@ -159,7 +159,7 @@ const LiveClassManager = () => {
     }
   };
 
-  // Handle Recording Creation
+  // Handle Recording Creation (Supports up to 1GB+ via resilient 5MB chunked uploads)
   const handleRecordingSubmit = async (e) => {
     e.preventDefault();
     setLoadingRecordings(true);
@@ -169,47 +169,82 @@ const LiveClassManager = () => {
     setRecordingSuccess(null);
 
     try {
-      const formData = new FormData();
-      formData.append('title', recordingForm.title);
-      formData.append('description', recordingForm.description);
-      formData.append('duration', recordingForm.duration);
-      formData.append('recordedDate', recordingForm.recordedDate);
-      formData.append('validityDays', recordingForm.validityDays);
-      if (recordingForm.liveClassId) {
-        formData.append('liveClassId', recordingForm.liveClassId);
-      }
-
-      if (recordingSource === 'file') {
-        if (!videoFile) {
-          throw new Error('Please select a video file to upload');
-        }
-        formData.append('video', videoFile);
-      } else {
+      // 1. External URL Submission
+      if (recordingSource === 'url') {
         if (!recordingForm.videoUrl) {
           throw new Error('Please provide a video URL');
         }
-        formData.append('videoUrl', recordingForm.videoUrl);
+        await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings`, {
+          title: recordingForm.title,
+          description: recordingForm.description,
+          duration: recordingForm.duration,
+          recordedDate: recordingForm.recordedDate,
+          validityDays: recordingForm.validityDays,
+          videoUrl: recordingForm.videoUrl,
+          liveClassId: recordingForm.liveClassId || null
+        });
+
+        setRecordingSuccess('Live class recording link added successfully! Accessible for 30 days.');
+        setRecordingForm({
+          title: '',
+          description: '',
+          duration: '',
+          recordedDate: getTodayStr(),
+          validityDays: '30',
+          videoUrl: '',
+          liveClassId: ''
+        });
+        await fetchRecordings();
+        return;
       }
 
-      if (thumbnailFile) {
-        formData.append('thumbnail', thumbnailFile);
+      // 2. Direct Video File: Resilient Chunked Upload (Handles up to 1.5 GB without server drops!)
+      if (!videoFile) {
+        throw new Error('Please select a video file to upload');
       }
 
-      const res = await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 0, // No client timeout for 1GB+ uploads
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(percent);
+      const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB per chunk (bypasses all web-server proxy limits)
+      const totalChunks = Math.ceil(videoFile.size / CHUNK_SIZE);
+      const uploadId = `rec_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, videoFile.size);
+        const chunkBlob = videoFile.slice(start, end);
+
+        const chunkFormData = new FormData();
+        chunkFormData.append('chunk', chunkBlob, 'part');
+        chunkFormData.append('uploadId', uploadId);
+        chunkFormData.append('chunkIndex', chunkIndex);
+        chunkFormData.append('totalChunks', totalChunks);
+        chunkFormData.append('fileName', videoFile.name);
+
+        // Attach metadata and optional thumbnail with the final chunk
+        if (chunkIndex === totalChunks - 1) {
+          chunkFormData.append('title', recordingForm.title);
+          chunkFormData.append('description', recordingForm.description || '');
+          chunkFormData.append('duration', recordingForm.duration || '');
+          chunkFormData.append('recordedDate', recordingForm.recordedDate);
+          chunkFormData.append('validityDays', recordingForm.validityDays);
+          if (recordingForm.liveClassId) {
+            chunkFormData.append('liveClassId', recordingForm.liveClassId);
+          }
+          if (thumbnailFile) {
+            chunkFormData.append('thumbnail', thumbnailFile);
           }
         }
-      });
+
+        await axios.post(`${config.API_BASE_URL}/api/live-classes/recordings/chunk`, chunkFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 120000
+        });
+
+        const percent = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+        setUploadProgress(percent);
+      }
 
       setUploadProgress(100);
-      setRecordingSuccess('Live class recording uploaded and published successfully! Accessible for 30 days.');
+      setRecordingSuccess('Live class recording uploaded and saved securely! Accessible for 30 days.');
       setRecordingForm({
         title: '',
         description: '',
@@ -224,14 +259,7 @@ const LiveClassManager = () => {
       await fetchRecordings();
     } catch (err) {
       console.error('Upload Error:', err);
-      let errorMsg = err.response?.data?.error || err.response?.data?.message;
-      if (!errorMsg) {
-        if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
-          errorMsg = 'Network Error: The upload timed out or connection was reset by the server. Large 4K videos often exceed hosting limits. Please compress your video to 720p/1080p MP4 (under 300MB) or use the "External Video Link" option (YouTube Unlisted / Google Drive).';
-        } else {
-          errorMsg = err.message || 'Failed to upload live class recording';
-        }
-      }
+      let errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to upload recording';
       setRecordingError(errorMsg);
     } finally {
       setLoadingRecordings(false);

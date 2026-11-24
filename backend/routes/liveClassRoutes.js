@@ -8,6 +8,33 @@ const LiveClassRegistration = require('../models/LiveClassRegistration');
 const LiveClassRecording = require('../models/LiveClassRecording');
 const AllowedStudent = require('../models/AllowedStudent');
 const recordingUpload = require('../middleware/recordingUpload');
+const multer = require('multer');
+
+// Specialized Chunk Storage for 1 GB+ Large Video Uploads (5MB chunks bypass web-server request caps)
+const chunkStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadId = (req.body.uploadId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '');
+    const tempDir = path.join(__dirname, '..', 'uploads', 'temp_chunks', uploadId);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    cb(null, tempDir);
+  },
+  filename: (req, file, cb) => {
+    if (file.fieldname === 'thumbnail') {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `thumb${ext}`);
+    } else {
+      const idx = req.body.chunkIndex !== undefined ? req.body.chunkIndex : '0';
+      cb(null, `${idx}.part`);
+    }
+  }
+});
+
+const chunkUpload = multer({
+  storage: chunkStorage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB per chunk limit (chunks are 5MB)
+});
 
 // ==========================================
 // LIVE CLASS ROUTES
@@ -293,6 +320,121 @@ router.get('/recordings', async (req, res) => {
   } catch (error) {
     console.error('Error fetching recordings:', error);
     res.status(500).json({ error: 'Server error fetching recordings' });
+  }
+});
+
+// =========================================================================
+// Chunked Upload Endpoint (Seamlessly handles up to 1GB+ without proxy timeouts)
+// =========================================================================
+router.post('/recordings/chunk', chunkUpload.fields([
+  { name: 'chunk', maxCount: 1 },
+  { name: 'thumbnail', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { uploadId, chunkIndex, totalChunks, fileName } = req.body;
+    
+    if (!uploadId || chunkIndex === undefined || !totalChunks) {
+      return res.status(400).json({ error: 'Missing chunk upload parameters' });
+    }
+
+    const currentIdx = parseInt(chunkIndex, 10);
+    const total = parseInt(totalChunks, 10);
+    const safeUploadId = uploadId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const tempDir = path.join(__dirname, '..', 'uploads', 'temp_chunks', safeUploadId);
+
+    // If this is NOT the final chunk, acknowledge receipt immediately
+    if (currentIdx < total - 1) {
+      return res.json({ success: true, chunkIndex: currentIdx, complete: false });
+    }
+
+    // FINAL CHUNK: Assemble all chunks into final video file
+    const {
+      title,
+      description,
+      duration,
+      recordedDate,
+      validityDays,
+      liveClassId
+    } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required for recording' });
+    }
+
+    const cleanBase = fileName ? fileName.replace(/[^a-zA-Z0-9.]/g, '_') : 'class_recording';
+    let ext = path.extname(cleanBase).toLowerCase();
+    if (!ext || ext.length < 2) ext = '.mp4';
+    
+    const finalFileName = `recording-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+    const recordingsDir = path.join(__dirname, '..', 'uploads', 'recordings');
+    if (!fs.existsSync(recordingsDir)) {
+      fs.mkdirSync(recordingsDir, { recursive: true });
+    }
+    const finalFilePath = path.join(recordingsDir, finalFileName);
+
+    // Statically merge chunk files
+    const writeStream = fs.createWriteStream(finalFilePath);
+    for (let i = 0; i < total; i++) {
+      const partPath = path.join(tempDir, `${i}.part`);
+      if (!fs.existsSync(partPath)) {
+        throw new Error(`Missing chunk index ${i}`);
+      }
+      const data = fs.readFileSync(partPath);
+      writeStream.write(data);
+      try { fs.unlinkSync(partPath); } catch (e) {}
+    }
+    writeStream.end();
+
+    await new Promise((resolve, reject) => {
+      writeStream.on('finish', resolve);
+      writeStream.on('error', reject);
+    });
+
+    // Check for optional thumbnail
+    let thumbnailUrl = null;
+    if (req.files && req.files.thumbnail && req.files.thumbnail.length > 0) {
+      const thumbFile = req.files.thumbnail[0];
+      const thumbFinalName = `thumb-${Date.now()}-${Math.round(Math.random() * 1e6)}${path.extname(thumbFile.originalname) || '.jpg'}`;
+      const thumbFinalPath = path.join(recordingsDir, thumbFinalName);
+      fs.copyFileSync(thumbFile.path, thumbFinalPath);
+      thumbnailUrl = `/api/uploads/recordings/${thumbFinalName}`;
+    }
+
+    // Clean up temp directory
+    try {
+      const remainingFiles = fs.readdirSync(tempDir);
+      for (const f of remainingFiles) {
+        fs.unlinkSync(path.join(tempDir, f));
+      }
+      fs.rmdirSync(tempDir);
+    } catch (e) {}
+
+    const videoUrl = `/api/uploads/recordings/${finalFileName}`;
+    const recDate = recordedDate || new Date().toISOString().split('T')[0];
+    const days = parseInt(validityDays, 10) || 30;
+    const expDateObj = new Date(recDate);
+    expDateObj.setDate(expDateObj.getDate() + days);
+    const expiryDate = expDateObj.toISOString().split('T')[0];
+
+    const recording = await LiveClassRecording.create({
+      liveClassId: liveClassId ? parseInt(liveClassId, 10) : null,
+      title,
+      description: description || '',
+      videoUrl,
+      thumbnailUrl,
+      duration: duration || '',
+      recordedDate: recDate,
+      expiryDate
+    });
+
+    const plain = recording.toJSON();
+    plain.daysRemaining = days;
+    plain.isExpired = false;
+
+    res.status(201).json(plain);
+  } catch (error) {
+    console.error('Error processing chunked upload:', error);
+    res.status(500).json({ error: error.message || 'Chunked upload assembly failed' });
   }
 });
 
